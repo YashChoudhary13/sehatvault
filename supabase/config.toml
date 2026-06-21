@@ -1,0 +1,6 @@
+# Minimal Supabase config. Run `npx supabase init` to regenerate the full file.
+# The cloud project must be created in region ap-south-1 (Mumbai) per ADR-005.
+project_id = "sehatvault"
+
+[db]
+major_version = 16
