@@ -1,0 +1,15 @@
+node_modules/
+.next/
+.turbo/
+dist/
+coverage/
+*.log
+.env
+.env.*
+!.env.example
+.DS_Store
+next-env.d.ts
+.vercel/
+supabase/.branches/
+supabase/.temp/
+supabase/database.types.ts

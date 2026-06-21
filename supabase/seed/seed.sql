@@ -1,0 +1,1 @@
+-- Synthetic dev seed only. Empty at PR1 (no tables yet).
