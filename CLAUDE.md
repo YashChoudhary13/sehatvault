@@ -56,7 +56,7 @@
 | Styling | **Tailwind v4** + shadcn/ui (Radix + CVA) | Tokens in `packages/config/theme.css` via CSS `@theme` |
 | Language | **TypeScript strict** everywhere | |
 | AI service | **Python FastAPI** worker on Render | Async OCR/extraction pipeline; stateless, drains pgmq |
-| Database | **Postgres via Supabase** (`ap-south-1`) | + pgvector (RAG) + pgmq (job queue) + pg_cron (reminders) |
+| Database | **PostgreSQL 17 via Supabase** (`ap-south-1`) | PG17 is the standard (config.toml + remote); + pgvector (RAG) + pgmq (queue) + pg_cron (reminders) |
 | Auth | **Supabase Auth — Email OTP** (canonical) + app-lock PIN | No SMS OTP at MVP; DLT deferred (ADR-019) |
 | Notifications | **`NotificationProvider`** interface — Mock (in-app, default) + Telegram (opt-in) | SMS/WhatsApp = future providers (ADR-020) |
 | Storage | **Supabase Storage** private bucket (`ap-south-1`) | AES-256 at rest; short-lived signed URLs only |
@@ -266,13 +266,13 @@ Full ADR list: see `docs/Decisions.md` (canonical, ADR-001..021). Key decisions:
 
 | Item | Priority | Notes |
 |------|----------|-------|
-| PHI-to-LLM residency (T5) | High | Sending docs to Claude crosses India region. DPA + minimum payload + redaction + disclosure needed before M2. |
-| Extraction accuracy (T1) | Critical | Build 50-doc golden eval set before trusting the AI pipeline. |
-| Telegram bot token (TelegramNotificationProvider) | Low | From @BotFather; needed for real notification delivery in M3. Mock provider needs nothing. |
+| **Supabase migration history repair** | **Only open technical blocker** | Remote has 2 timestamp migrations; local is sequential `0001` (ADR-021). Realign before `0002_family.sql`; needs CLI linked. |
 
-> **No external-approval blockers remain on the MVP critical path.** Email OTP (ADR-019) removes the DLT/SMS gate; Mock + Telegram (ADR-020) remove the WhatsApp gate; billing launches free.
+> **Migration repair is the only remaining technical blocker.** No external-approval blockers on the MVP critical path — Email OTP (ADR-019) removes DLT/SMS; Mock + Telegram (ADR-020) remove WhatsApp; billing is Razorpay test-mode.
 >
-> **Reclassified as FUTURE production features (NOT blockers):** DLT registration · SMS OTP · WhatsApp Business API · Razorpay production KYC.
+> **Not blockers (risk/setup):** extraction accuracy (T1 — build the 50-doc eval set before trusting M2 AI); Telegram bot token (@BotFather, only for real delivery — Mock needs nothing).
+>
+> **Deferred to FUTURE production (not MVP):** PHI-to-LLM DPA / zero-retention (T5) · DLT registration · SMS OTP · WhatsApp Business API · Razorpay production KYC + live keys.
 
 ---
 

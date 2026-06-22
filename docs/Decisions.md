@@ -74,7 +74,8 @@
 - **Context:** Need strong multilingual vision + structured output; per-record AI cost is the main variable cost.
 - **Decision:** **Claude** — a smaller/faster model for high-volume extraction, a larger model for RAG/summaries. Strict JSON schema output. Per-record **cost ceiling** + caching; gate heavy AI behind Plus later.
 - **Consequences:** Good accuracy + structured output; predictable cost. Dependency on an external API (see ADR-012 / risk T5 for PHI residency).
-- **Revisit-when:** Cost or residency pressure → evaluate an in-region/self-hosted model for extraction.
+- **Amended 2026-06-22:** the PHI-to-LLM **DPA / zero-retention** posture (T5) is a **production requirement, deferred until production**. MVP dev/test uses **synthetic / de-identified** data only, so the DPA is **not an MVP-dev blocker**.
+- **Revisit-when:** Cost or residency pressure → evaluate an in-region/self-hosted model for extraction; secure the DPA **before** any real PHI is processed in production.
 
 ### ADR-011 — pgvector embeddings from Day 1; Q&A (RAG) is Should-have
 - **Status:** Accepted (MVP)

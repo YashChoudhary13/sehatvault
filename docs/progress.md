@@ -128,21 +128,25 @@
 
 ## Blockers
 
-> **No external-approval blockers remain on the MVP critical path** — email OTP (ADR-019) removes the DLT/SMS gate; Mock + Telegram (ADR-020) remove the WhatsApp gate; billing launches free.
+> **Migration history repair is the ONLY remaining technical blocker.** No external-approval blockers on the MVP critical path — email OTP (ADR-019) removes DLT/SMS; Mock + Telegram (ADR-020) remove WhatsApp; billing is Razorpay test-mode.
 
 | Blocker | Impact | Status |
 |---------|--------|--------|
-| **PHI-to-LLM DPA** (Anthropic zero-retention terms) | Must be in place before M2 processes real PHI | ⚠️ Needs decision before Sprint 7 |
-| **Telegram bot token** (@BotFather) | Needed for real Telegram delivery in M3 (Mock works without it) | ⬜ Get before Sprint 12 |
-| **Migration history repair** | Remote has 2 timestamp migrations; local is sequential `0001` (ADR-021). Push will drift until repaired. | ⬜ Run repair before adding `0002_family.sql` (commands in Next Actions) |
+| **Supabase migration history repair** | Remote has 2 timestamp migrations; local is sequential `0001` (ADR-021). `db push` drifts until repaired. | ⬜ **Only open blocker** — needs CLI linked; run before `0002_family.sql` |
 
-### Deferred to future production (NOT blockers — ADR-019/020/017)
+### Not blockers (setup / risk)
+| Item | Note |
+|------|------|
+| Telegram bot token (@BotFather) | Only for real delivery in M3; **MockNotificationProvider needs nothing** |
+| Extraction accuracy (T1) | M2 risk — build the 50-doc eval set before trusting the AI pipeline |
+
+### Deferred to future production (NOT blockers)
 | Item | Why deferred |
 |------|--------------|
-| DLT registration | Email OTP is canonical (ADR-019); SMS OTP is future |
-| SMS OTP | Future auth method once DLT completes |
+| **PHI-to-LLM DPA / zero-retention (T5)** | **Production requirement, deferred until production** — MVP dev/test uses synthetic/de-identified data, so not an MVP-dev blocker |
+| DLT registration / SMS OTP | Email OTP is canonical (ADR-019) |
 | WhatsApp Business API | Future WhatsAppProvider + capture (ADR-020) |
-| Razorpay production KYC | Future; billing launches free (ADR-017) |
+| Razorpay production KYC + live keys | Future; MVP is test-mode (ADR-017) |
 
 ---
 
@@ -160,5 +164,5 @@
      ```
 4. **Do not start `services/ai/`** until Sprint 7 — premature AI work is the top delivery risk.
 5. **Add `packages/db`** (generated Supabase TS types) once the Sprint 2 schema exists.
-6. **Agree on DPA posture for Claude API** before Sprint 7 processes real PHI.
-7. **Get a Telegram bot token** (@BotFather) before Sprint 12 for `TelegramNotificationProvider`; the Mock provider needs nothing.
+6. **PHI-to-LLM DPA / zero-retention is a *production* requirement — deferred.** MVP dev/test uses synthetic/de-identified data; not needed to build M2.
+7. **Telegram is the next notification provider to implement** (after Mock, in M3): get a bot token (@BotFather) before Sprint 12. The Mock provider needs nothing.

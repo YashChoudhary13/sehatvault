@@ -112,8 +112,8 @@ services/ai/app/
 
 **Secrets & config:**
 - `.env.example` is committed (names only). Real values live in **Vercel/Render/Supabase env settings** and a local `.env.local` (git-ignored).
-- **Client-exposed** vars are only `NEXT_PUBLIC_SUPABASE_URL` + the **anon** key (safe with RLS). The **service-role** key, `ANTHROPIC_API_KEY`, MSG91, Razorpay, and WhatsApp tokens are **server/worker only** — never in `NEXT_PUBLIC_*`, never shipped to the browser.
-- Key inventory: `SUPABASE_SERVICE_ROLE_KEY`, `ANTHROPIC_API_KEY`, `MSG91_AUTH_KEY`, `RAZORPAY_KEY_ID/SECRET`, `WHATSAPP_TOKEN/PHONE_ID`, `AI_CALLBACK_SIGNING_SECRET` (HMAC between worker and `/api/ai/callback`).
+- **Client-exposed** vars are only `NEXT_PUBLIC_SUPABASE_URL` + the **anon** key (safe with RLS). The **service-role** key, `ANTHROPIC_API_KEY`, `TELEGRAM_BOT_TOKEN`, and Razorpay (test) keys are **server/worker only** — never in `NEXT_PUBLIC_*`, never shipped to the browser.
+- Key inventory (MVP): `SUPABASE_SERVICE_ROLE_KEY`, `ANTHROPIC_API_KEY`, `TELEGRAM_BOT_TOKEN`, `RAZORPAY_KEY_ID/SECRET` (test mode), `AI_CALLBACK_SIGNING_SECRET` (HMAC between worker and `/api/ai/callback`), `SENTRY_DSN`. **Deferred (future production):** `MSG91_AUTH_KEY` (SMS/DLT), `WHATSAPP_TOKEN/PHONE_ID` (WhatsApp).
 - **No secret is ever logged.** Sentry scrubbing on; structured logs redact tokens/PHI.
 
 ---
