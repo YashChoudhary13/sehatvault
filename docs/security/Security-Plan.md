@@ -1,11 +1,13 @@
 # Security & Privacy Plan
 
-> "Trust *is* the product" (README §7, §17). This consolidates the security posture decided across `../docs/Phase0-Architecture-Review.md §0.3–0.4`, `../docs/Decisions.md` (ADR-005/007/012), and `../database/Schema.md §5–6`. Scope: **MVP**, DPDP-defensible, solo-operable.
+> "Trust *is* the product" (README §7, §17). This consolidates the security posture decided across `../history/Phase0-Architecture-Review.md §0.3–0.4`, `../Decisions.md` (ADR-005/012/019), and `../database/Schema.md §5–6`. Scope: **MVP**, DPDP-defensible, solo-operable.
+
+> **Related docs:** [Engineering-Plan](../architecture/Engineering-Plan.md) · [Schema](../database/Schema.md) · [API-Spec](../api/API-Spec.md) · [Decisions](../Decisions.md)
 
 ---
 
 ## 1. Authentication & sessions
-- **Phone OTP** via Supabase Auth + MSG91 (DLT templates). No passwords to leak.
+- **Email OTP** via Supabase Auth (magic-link / 6-digit code; ADR-019). No passwords to leak; no SMS/DLT dependency.
 - **JWT sessions** (short-lived access + refresh); `middleware.ts` refreshes and protects `(app)` routes.
 - **App-lock**: client-side PIN (argon2 hash in `app_user.app_lock_hash`), optional WebAuthn/biometric where supported. Gates re-entry to an already-authenticated session.
 - **Service-role key** is server/worker-only; the browser only ever holds the **anon** key (safe under RLS). Never put privileged keys in `NEXT_PUBLIC_*`.
@@ -25,7 +27,7 @@
 - **Conscious deferral:** app-layer field-level / per-object envelope encryption is **out of MVP** (see threat model §6 for exactly what that means). Revisit trigger: SDF threshold / B2B2C / first audit.
 
 ## 4. The LLM-residency control (Risk T5) — the one that needs explicit ownership
-- PHI is sent to Claude's API for extraction → it **leaves the India region**.
+- PHI is sent to Claude's API for extraction → it **leaves the India region**. *(Production-only concern: MVP dev/test uses synthetic / de-identified data; the DPA is required before real PHI in production — deferred, not an MVP blocker.)*
 - **Controls:** DPA with **no-training / zero-retention**; send the **minimum** payload; **redact** obvious direct identifiers pre-call where feasible; route **all** AI calls through a single reviewed client (`services/ai/clients/llm.py`) so there's one auditable egress point; record the flow in the **record of processing**; disclose in the privacy policy + consent copy.
 - **Escalation path:** in-region / self-hosted extraction model if residency posture tightens.
 
@@ -50,7 +52,7 @@
 | **Share-link abuse** | Token guess / replay / over-broad | 128-bit token, hash-at-rest, server expiry+revocation, scope enforced, access logged, rate-limited, `noindex`; global kill-switch | a *valid leaked link* works until expiry/revoke (by design — like any share link) |
 | **Platform compromise** | Supabase/service-key exposure reads plaintext | least-privilege keys, secret hygiene, no client service-key | **plaintext readable** → the gap ADR-012 names; revisit at SDF |
 | **PHI egress** | LLM provider | DPA, minimisation, single egress point (§4) | out-of-region processing (T5) |
-| **Account takeover** | OTP interception / SIM swap | OTP throttling, app-lock PIN, short sessions | SIM-swap risk inherent to phone-OTP |
+| **Account takeover** | Email/OTP interception, mailbox compromise | OTP throttling, app-lock PIN, short sessions | Depends on the user's email-account security |
 | **Tampered AI callback** | Forged results | HMAC signature + service-role on `/api/ai/callback` | — |
 | **Injection / XSS** | User/LLM text rendered | parameterised SQL, React escaping, CSP, sanitise LLM HTML | — |
 

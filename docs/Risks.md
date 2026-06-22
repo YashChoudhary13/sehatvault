@@ -30,12 +30,11 @@
 - **Early-warning:** new AI calls added without going through the single, reviewed extraction client.
 - **Contingency:** route extraction through an in-region/self-hosted model; or process documents with on-prem OCR + region-local LLM for sensitive cohorts.
 
-### S2 — External approvals on the critical path · Scope · **H × M = high**
+### S2 — External approvals on the critical path · Scope · **Downgraded → Low (decisions removed the dependencies)**
 - **Owner:** Engineering Manager.
-- **Risks:** WhatsApp Cloud API (Meta Business verification + templates), **SMS DLT** registration (gates OTP login), **Razorpay KYC** (gates billing).
-- **Mitigation:** **start all three in Week 1 (M0)**; each has an **in-app fallback** (in-app capture for WhatsApp; the OTP path must clear DLT before launch, so it's the one true dependency — see contingency; launch free if Razorpay slips).
-- **Early-warning:** approval still pending at the M-boundary that needs it.
-- **Contingency:** for OTP specifically — if DLT/MSG91 stalls, use Twilio (also DLT-bound for India) or, worst case, **WhatsApp/email OTP** as a temporary login while DLT clears. Never let billing or WhatsApp capture block launch.
+- **Status (2026-06-22):** Largely **resolved**. Email OTP (ADR-019) removes the SMS/DLT gate; NotificationProvider Mock+Telegram (ADR-020) removes the WhatsApp gate; Razorpay runs in **test mode** (ADR-017), so billing KYC is deferred. None now gate the MVP.
+- **Remaining:** only a **Telegram bot token** (trivial, @BotFather) for real notifications; the Mock provider needs nothing.
+- **Deferred to future production:** DLT/SMS, WhatsApp Business (Meta), Razorpay production KYC.
 
 ---
 
@@ -69,7 +68,7 @@
 | ID | Risk | Cat | L×I | Mitigation (short) |
 |---|---|---|---|---|
 | T6 | Handwriting OCR poor | Tech | M×M | Expectation-setting; typed-first; correction UI. Don't market handwriting. |
-| C3 | DLT registration delay blocks OTP | Compliance | M×M | Start Week 1; Twilio/WhatsApp/email OTP fallback. |
+| C3 | ~~DLT delay blocks OTP~~ **Resolved (ADR-019)** | Compliance | — | Email OTP is canonical; SMS/DLT deferred to future production. |
 | B2 | Incumbents (Eka Care, super-apps) | Business | M×M | Win on family-first + vernacular + Tier-2/3 + WhatsApp + neutrality. |
 | B3 | Cold-start capture friction | Business | M×M | One-tap photo; lab-QR seeding; WhatsApp forward (later). |
 | L1 | Medical liability / wrong extraction | Legal | L×H | Non-diagnostic framing; "verify with your doctor"; show source doc; never auto-alter facts. |

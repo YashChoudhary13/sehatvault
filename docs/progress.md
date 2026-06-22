@@ -1,5 +1,7 @@
 # SehatVault — Progress Tracker
 
+> **Related docs:** [Planning](planning/Planning.md) · [Decisions](Decisions.md) · [Engineering-Plan](architecture/Engineering-Plan.md) · [DOCUMENTATION](DOCUMENTATION.md)
+
 > **Last updated:** 2026-06-22
 > **Current milestone:** M1 — Manual Vault (starting Sprint 2)
 > **Active branch:** `main` (Sprint 2 branch not yet created)

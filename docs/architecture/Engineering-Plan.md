@@ -1,6 +1,8 @@
 # Engineering Plan
 
-> The "how we build it" companion to `../docs/Decisions.md`. Monorepo, packages, folders, environments, deployment, branching, CI/CD, and testing — each with the *why*. Optimised for **one developer** who must move fast without creating a mess they can't maintain.
+> The "how we build it" companion to `../Decisions.md`. Monorepo, packages, folders, environments, deployment, branching, CI/CD, and testing — each with the *why*. Optimised for **one developer** who must move fast without creating a mess they can't maintain.
+
+> **Related docs:** [Decisions](../Decisions.md) · [Schema](../database/Schema.md) · [API-Spec](../api/API-Spec.md) · [Security-Plan](../security/Security-Plan.md) · [Planning](../planning/Planning.md) · [Progress](../progress.md)
 
 ---
 
@@ -25,7 +27,7 @@ sehatvault/
 ├─ supabase/
 │  ├─ migrations/           # SQL migrations — sequential names 0001_,0002_,… (ADR-021); source of truth, see ../database/Schema.md
 │  ├─ policies/             # RLS policies (kept reviewable; applied via migrations)
-│  ├─ functions/            # Edge Functions (e.g., whatsapp-webhook later) — minimal at MVP
+│  ├─ functions/            # Edge Functions (e.g., telegram-webhook for notifications) — minimal at MVP
 │  └─ seed/                 # dev seed data (synthetic only)
 ├─ docs/ architecture/ database/ api/ security/ design/ roadmap/ tasks/   # this planning workspace
 ├─ .github/workflows/       # CI/CD
@@ -175,7 +177,7 @@ A solo dev can't test everything; we test what is **expensive to get wrong**.
 | **Component** | Vitest + Testing Library | review card, trend chart edge cases, elder-mode rendering | P2 |
 | **Accessibility** | axe in Playwright | elder mode + base screens meet contrast/labels | P2 |
 
-**Not doing at MVP:** exhaustive unit coverage of UI, load testing, contract tests against live external APIs (we mock MSG91/WhatsApp/Razorpay/LLM in CI; smoke against real in staging only).
+**Not doing at MVP:** exhaustive unit coverage of UI, load testing, contract tests against live external APIs (we mock Telegram/Razorpay/LLM in CI; smoke against real in staging only).
 
 **Definition of "tested enough to launch":** the four P0 suites are green and the P1 E2E critical path passes on staging. That maps exactly to the `MVP.md` acceptance gates.
 
@@ -185,5 +187,5 @@ A solo dev can't test everything; we test what is **expensive to get wrong**.
 - **Sentry** (web + Python) with PHI scrubbing.
 - **Structured logs** with request/job IDs; never log document contents or tokens.
 - **Audit log** (`access_log`) is product-level, not just ops — it backs the consent dashboard.
-- **Uptime:** a simple cron ping on `/health` (web + AI). **Alerts:** Sentry → email/WhatsApp to the solo dev.
+- **Uptime:** a simple cron ping on `/health` (web + AI). **Alerts:** Sentry → email/Telegram to the solo dev.
 - **Cost watch:** a daily job logs LLM spend per active family (Risks.md B1).

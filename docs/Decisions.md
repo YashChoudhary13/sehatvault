@@ -2,7 +2,9 @@
 
 > Every non-trivial decision, why it was made, and what would make us revisit it. Format per ADR: **Status · Context · Decision · Consequences · Revisit-when.** Status ∈ {Accepted, Accepted (MVP), Deferred, Proposed, Superseded}.
 >
-> These ADRs operationalise `Phase0-Architecture-Review.md`. Where the README and the constraints conflicted, the ADR records the resolution.
+> These ADRs operationalise `history/Phase0-Architecture-Review.md`. Where the README and the constraints conflicted, the ADR records the resolution.
+
+> **Related docs:** [Engineering-Plan](architecture/Engineering-Plan.md) · [Schema](database/Schema.md) · [API-Spec](api/API-Spec.md) · [Security-Plan](security/Security-Plan.md) · [Planning](planning/Planning.md) · [Progress](progress.md)
 
 ---
 

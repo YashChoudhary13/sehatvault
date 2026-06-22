@@ -1,6 +1,6 @@
 # SehatVault — Claude Code Project Memory
 
-> Read this file + `docs/progress.md` + the relevant `docs/pr-history/` summary to orient fully in any session. Do not re-read the entire planning workspace unless you need domain detail.
+> Read this file + `docs/progress.md` + the relevant `docs/pr-history/` summary to orient fully in any session. The docs map + topic owners is `docs/DOCUMENTATION.md`. Do not re-read the entire docs tree unless you need domain detail.
 
 ---
 
@@ -92,7 +92,7 @@
 - Baseline encryption (TLS + AES-256 at rest + RLS + private buckets); app-layer field encryption deferred
 - ABDM deferred to Phase 2; schema stays FHIR-aware
 
-**Canonical deep references (don't duplicate these — link to them):** `architecture/Engineering-Plan.md` (monorepo/deploy/CI/testing) · `database/Schema.md` (full schema, RLS, storage) · `api/API-Spec.md` (endpoint contracts) · `security/Security-Plan.md` (threat model, DPDP) · `docs/Phase0-Architecture-Review.md` (the pivot rationale).
+**Canonical deep references (don't duplicate — link to them):** `docs/DOCUMENTATION.md` (docs map + topic owners) · `docs/architecture/Engineering-Plan.md` (monorepo/deploy/CI/testing) · `docs/database/Schema.md` (schema, RLS, storage) · `docs/api/API-Spec.md` (endpoints) · `docs/security/Security-Plan.md` (threat model, DPDP) · `docs/planning/Planning.md` (scope/milestones/sprints) · `docs/Vision.md` (product why) · `docs/history/Phase0-Architecture-Review.md` (pivot rationale).
 
 ---
 
@@ -129,15 +129,15 @@ sehatvault/
 │   ├── migrations/                 # SQL source of truth (numbered; never edit applied migrations)
 │   ├── policies/                   # RLS policies (applied via migrations)
 │   └── seed/                       # Synthetic dev data only
-├── docs/                           # Planning workspace + memory system (you are here)
-│   ├── progress.md                 # ← NEW memory: living sprint status + next tasks (read this)
-│   ├── pr-history/                 # ← NEW memory: one retrospective summary per merged PR
-│   ├── Decisions.md                # CANONICAL ADRs (ADR-001..018) — do not duplicate
-│   ├── Phase0-Architecture-Review.md  # the web-first pivot + risk register
-│   ├── INDEX.md  MVP.md  Scope.md  Milestones.md  Risks.md  Dev-Setup.md
-├── architecture/Engineering-Plan.md   # CANONICAL architecture (monorepo, deploy, CI, testing)
-├── database/Schema.md                 # CANONICAL DB schema + RLS + storage layout
-├── api/API-Spec.md  security/Security-Plan.md  design/  roadmap/  tasks/Backlog.md
+├── docs/                           # ALL documentation (single tree) — map: docs/DOCUMENTATION.md
+│   ├── DOCUMENTATION.md            # docs map + topic owners + authority rule
+│   ├── progress.md                 # living status (read this) · Decisions.md (ADRs 001..021)
+│   ├── Vision.md  Dev-Setup.md  Risks.md
+│   ├── architecture/Engineering-Plan.md · database/Schema.md · api/API-Spec.md · security/Security-Plan.md
+│   ├── design/{Design-System,UX-Plan}.md
+│   ├── planning/Planning.md        # merged scope/milestones/roadmap/sprints/backlog
+│   ├── pr-history/                 # one retrospective per merged PR
+│   └── history/                    # FROZEN: Original-Product-Spec · Phase0-Architecture-Review · Planning-Archive
 └── .github/workflows/ci.yml        # lint · typecheck · test · build · db migration check
 ```
 

@@ -4,6 +4,8 @@
 >
 > **Conventions:** PK `id uuid default gen_random_uuid()`. Instants = `timestamptz` (UTC). Calendar dates = `date` (e.g. `record_date = 2026-06-18`). Arrays = `text[]`. Money = `numeric`. Embeddings = `vector(n)`. `created_at`/`updated_at` on every table; `updated_at` via trigger. **Every PHI table carries `family_id` and has RLS.**
 
+> **Related docs:** [Engineering-Plan](../architecture/Engineering-Plan.md) · [API-Spec](../api/API-Spec.md) · [Security-Plan](../security/Security-Plan.md) · [Decisions](../Decisions.md)
+
 ---
 
 ## 1. What we simplified vs the README data model
@@ -211,7 +213,7 @@ create table reminder (
   title        text not null,
   schedule_rrule text,                        -- RRULE; or null for one-off
   next_fire_at timestamptz,
-  channels     text[] not null default '{inapp}',  -- {'inapp','webpush','whatsapp'}
+  channels     text[] not null default '{inapp}',  -- {'inapp','telegram'} (NotificationProvider; webpush/whatsapp future)
   state        reminder_state not null default 'scheduled',
   created_at   timestamptz not null default now(),
   updated_at   timestamptz not null default now()

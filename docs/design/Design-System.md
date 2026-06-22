@@ -160,7 +160,7 @@ Route group `apps/web/src/app/(marketing)/`. RSC by default; motion lives in cli
 4. **Feature bento** — timeline, trends, share-QR, reminders, AI Q&A.
 5. **Trust & privacy** — DPDP, encryption, "only you can see this," consent/expiry/access-log cues.
 6. **Family / NRI pricing** — freemium + premium family plan (NRI-priced).
-7. **Vernacular + WhatsApp** — en/hi, WhatsApp-native distribution.
+7. **Vernacular + notifications** — en/hi; in-app + Telegram notifications (WhatsApp deferred).
 8. **Footer** — links, language toggle, legal.
 
 ---

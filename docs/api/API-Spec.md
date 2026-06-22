@@ -1,9 +1,11 @@
 # API Specification
 
-> The contract for every operation, documented before implementation. Per `../docs/Decisions.md` (ADR-002) there is **no separate API gateway**: the "API" is (a) **Supabase/PostgREST** for RLS-guarded CRUD reads, (b) **Next.js Route Handlers + Server Actions** for mutations with side-effects, and (c) the **Python AI worker** contract. This document treats them uniformly as a REST surface so behaviour is unambiguous.
+> The contract for every operation, documented before implementation. Per `../Decisions.md` (ADR-002) there is **no separate API gateway**: the "API" is (a) **Supabase/PostgREST** for RLS-guarded CRUD reads, (b) **Next.js Route Handlers + Server Actions** for mutations with side-effects, and (c) the **Python AI worker** contract. This document treats them uniformly as a REST surface so behaviour is unambiguous.
 >
 > **Base (web):** `https://app.sehatvault.in` · **AI service (internal):** `https://ai.sehatvault.internal`
 > **All times** ISO-8601 UTC (`2026-06-18T09:30:00Z`); **dates** `YYYY-MM-DD`. **All IDs** uuid.
+
+> **Related docs:** [Engineering-Plan](../architecture/Engineering-Plan.md) · [Schema](../database/Schema.md) · [Security-Plan](../security/Security-Plan.md) · [Decisions](../Decisions.md) · [Planning](../planning/Planning.md)
 
 ---
 
@@ -28,15 +30,15 @@
 
 ---
 
-## 2. Authentication flow (phone OTP — ADR-007)
+## 2. Authentication flow (email OTP — ADR-019)
 
 ```
-POST /auth/otp/start      { "phone": "+9198XXXXXX21" }            → 200 { "data": { "sent": true } }
-POST /auth/otp/verify     { "phone": "+9198XXXXXX21", "code": "123456" }
+POST /auth/otp/start      { "email": "user@example.com" }          → 200 { "data": { "sent": true } }
+POST /auth/otp/verify     { "email": "user@example.com", "code": "123456" }
                           → 200 { "data": { "session": {…}, "is_new_user": true } }
 POST /auth/logout         → 204
 ```
-- Implemented via **Supabase Auth phone provider** (MSG91 SMS, DLT-registered templates). Rate-limited per phone + per IP.
+- Implemented via **Supabase Auth email OTP** (magic-link / 6-digit code; ADR-019). Rate-limited per email + per IP. SMS/phone OTP is deferred (see Planning "Pivots").
 - On first verify, a trigger creates `app_user` + a default `family` ("My Family"). The client then runs onboarding (add first member).
 - **App-lock** is client-side: `PUT /me/app-lock { "pin": "1234" }` stores `app_lock_hash` (argon2); re-entry is local, not a server round-trip.
 
@@ -163,7 +165,7 @@ Backed by the `observation(member_id, canonical_name, observed_at)` index. `dire
 | `PATCH` | `/reminders/:id` | reschedule / cancel |
 | `POST` | `/reminders/:id/ack` | `{ "state": "done" \| "skipped" }` (Taken/Skip) |
 
-**Reminder firing (internal):** `pg_cron` → `POST /api/cron/reminders` (service-role, secret header) selects `reminder where state='scheduled' and next_fire_at <= now()`, dispatches per `channels` (web-push/in-app; WhatsApp if enabled), advances `next_fire_at` from the RRULE.
+**Reminder firing (internal):** `pg_cron` → `POST /api/cron/reminders` (service-role, secret header) selects `reminder where state='scheduled' and next_fire_at <= now()`, dispatches via the **NotificationProvider** (Mock in-app by default; Telegram if the user connected it — ADR-020), advances `next_fire_at` from the RRULE.
 
 ---
 
@@ -232,7 +234,7 @@ Fields below the confidence threshold cause `status="needs_review"` so the user 
 ## 11. Webhooks (Should-have)
 | Method | Path | Notes |
 |---|---|---|
-| `POST` | `/api/webhooks/whatsapp` | Meta inbound: a forwarded document → resolve sender→family → ingest as `source='whatsapp'` → reply with the summary. Verifies Meta signature. |
+| `POST` | `/api/webhooks/telegram` | Telegram bot updates: deliver/confirm notifications; (future) inbound document capture. Verifies Telegram secret token. WhatsApp inbound is deferred (ADR-020). |
 | `POST` | `/api/webhooks/razorpay` | payment/subscription events → update `subscription`. Verifies signature. |
 
 ---
@@ -246,4 +248,4 @@ Fields below the confidence threshold cause `status="needs_review"` so the user 
 ---
 
 ## 13. Endpoint inventory (checklist for "documented before built")
-Auth(3) · Me/Family(5) · Members(5) · Records(8) · Trends(1) · Meds(3) · Reminders(5) · Shares owner(4) · Shares public(2) · Consent/Audit/Export/Delete(4) · AI(2)+callback(1) · Webhooks(2). **= 45 endpoints**, each with a zod request schema and a typed response. Implementation order follows `../roadmap/Sprints.md`.
+Auth(3) · Me/Family(5) · Members(5) · Records(8) · Trends(1) · Meds(3) · Reminders(5) · Shares owner(4) · Shares public(2) · Consent/Audit/Export/Delete(4) · AI(2)+callback(1) · Webhooks(2). **= 45 endpoints**, each with a zod request schema and a typed response. Implementation order follows `../planning/Planning.md`.
