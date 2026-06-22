@@ -1,6 +1,6 @@
 # Decisions.md — Architecture Decision Records (ADRs)
 
-> Every non-trivial decision, why it was made, and what would make us revisit it. Format per ADR: **Status · Context · Decision · Consequences · Revisit-when.** Status ∈ {Accepted, Accepted (MVP), Deferred, Proposed}.
+> Every non-trivial decision, why it was made, and what would make us revisit it. Format per ADR: **Status · Context · Decision · Consequences · Revisit-when.** Status ∈ {Accepted, Accepted (MVP), Deferred, Proposed, Superseded}.
 >
 > These ADRs operationalise `Phase0-Architecture-Review.md`. Where the README and the constraints conflicted, the ADR records the resolution.
 
@@ -37,7 +37,7 @@
 ### ADR-005 — Supabase as the platform; region ap-south-1 (Mumbai)
 - **Status:** Accepted
 - **Context:** Need Postgres + auth + object storage + RLS + India residency, cheaply, solo-operable.
-- **Decision:** **Supabase** project in **`ap-south-1`**. Postgres (+ `pgvector`, `pgmq`, `pg_cron`), Supabase Auth (phone OTP), Storage (private buckets), RLS.
+- **Decision:** **Supabase** project in **`ap-south-1`**. Postgres (+ `pgvector`, `pgmq`, `pg_cron`), Supabase Auth (email OTP — ADR-019), Storage (private buckets), RLS.
 - **Consequences:** One console, one bill, generous free tier, residency satisfied. Lock-in risk mitigated by standard Postgres + S3-compatible storage (portable).
 - **Revisit-when:** Scale/cost or compliance demands self-managed Postgres on AWS Mumbai (README's stated scale target).
 
@@ -49,7 +49,7 @@
 - **Revisit-when:** Never expected to flip; ABDM consumes the mapping layer.
 
 ### ADR-007 — Phone-OTP auth via MSG91 (Supabase Auth); app-lock PIN
-- **Status:** Accepted (MVP)
+- **Status:** ⚠️ **Superseded by ADR-019 (2026-06-22)** — MVP auth is now **email OTP**, not SMS. Kept for history. (App-lock PIN decision carries forward unchanged.)
 - **Context:** India is phone-first. Indian SMS needs TRAI **DLT** template registration. ABHA login is Post-MVP.
 - **Decision:** **Supabase Auth phone provider** backed by **MSG91** (Twilio fallback). Client-side **app-lock PIN** (and biometric where the browser supports WebAuthn) for re-entry.
 - **Consequences:** Familiar UX; DLT registration is a long-lead admin task (start Week 1). Cost per OTP is a real variable cost.
@@ -98,7 +98,7 @@
 - **Revisit-when:** Post-launch, when network records and a demo narrative justify the investment.
 
 ### ADR-014 — WhatsApp is the primary nudge channel and a Should-have capture path — never on the critical path
-- **Status:** Accepted (MVP) for *reminders channel*; Should-have for *capture*
+- **Status:** ⚠️ **Superseded by ADR-020 (2026-06-22)** — notifications now go through a pluggable `NotificationProvider` (Mock + Telegram at MVP); WhatsApp becomes a *future* provider. Kept for history.
 - **Context:** WhatsApp Cloud API needs Meta Business verification + number + template approval (external, approval-gated). It also neatly solves PWA's weak iOS push.
 - **Decision:** Architect reminders to deliver via **WhatsApp when available**, **web-push/in-app otherwise**. WhatsApp **capture** (`S-01`) ships when Meta approval lands. **No launch dependency on Meta.**
 - **Consequences:** Best-of-both nudges; launch is never blocked by an approval queue.
@@ -121,7 +121,7 @@
 ### ADR-017 — Payments via Razorpay (Should-have)
 - **Status:** Accepted (MVP, Should)
 - **Context:** Need UPI + cards + international (NRI). KYC is a long-lead task.
-- **Decision:** **Razorpay** (Cashfree fallback). Free/Plus gating at the app layer. Start KYC early; launch can be free.
+- **Decision:** **Razorpay** (Cashfree fallback). Free/Plus gating at the app layer. **Amended 2026-06-22:** **test mode only** at MVP (Razorpay test keys; no live transactions). Production KYC + live keys are a **future production feature, not an MVP blocker** — launch free, add the paywall later.
 - **Consequences:** Indian + diaspora monetisation; paywall is a fast-follow, not a blocker.
 - **Revisit-when:** International-card economics or NRI billing UX demand a dedicated processor.
 
@@ -132,15 +132,40 @@
 - **Consequences:** No timeout constraints; cheap; stateless and horizontally scalable later.
 - **Revisit-when:** Volume warrants autoscaling/GPU or moving to AWS Mumbai with the DB.
 
+### ADR-019 — Email OTP is the canonical auth; no SMS OTP at MVP (supersedes ADR-007)
+- **Status:** Accepted (MVP) — **supersedes ADR-007**
+- **Context:** Phone OTP (ADR-007) required TRAI **DLT** template registration via an SMS provider (MSG91/Twilio) — a multi-week, approval-gated, long-lead dependency with per-OTP cost, and it was the single biggest external gate on the launch critical path. The wedge users (caregivers, NRIs) can authenticate by email with zero approval friction.
+- **Decision:** Use **Supabase Auth Email OTP** (magic link / 6-digit code) as the **canonical** authentication flow. **Do not implement SMS OTP** at MVP. **DLT registration is deferred** to a future production phase. **App-lock PIN** (+ WebAuthn biometric where supported) for re-entry carries forward from ADR-007.
+- **Consequences:** Auth has **zero external-approval dependency** → launch is no longer gated by DLT/SMS. No per-OTP SMS cost. Trade-off: email is marginally less "India-phone-first" than SMS, but it removes the largest launch risk. Phone/SMS OTP and ABHA login become future enhancements.
+- **Revisit-when:** DLT completes and SMS (or WhatsApp) OTP is wanted as an additional method; ABHA login in Phase 2.
+
+### ADR-020 — Pluggable `NotificationProvider`; Mock + Telegram at MVP (supersedes ADR-014)
+- **Status:** Accepted (MVP) — **supersedes ADR-014**
+- **Context:** ADR-014 made WhatsApp the primary nudge channel, but WhatsApp Cloud API needs Meta Business verification + template approval (external, multi-week). We want a real, working notification path for MVP with **no approval gate**, plus a clean seam to add real channels later.
+- **Decision:** Define a **`NotificationProvider` interface** with pluggable implementations. MVP ships two:
+  - **MockNotificationProvider** — default; **no external setup**; persists messages to the DB and renders them as **in-app notifications**; used for demos/testing.
+  - **TelegramNotificationProvider** — **optional per-user** integration; the user connects their Telegram account and receives **real** reminders/notifications via Telegram. This is the real notification workflow for opted-in MVP users.
+  - **Routing:** users **without** Telegram get in-app (Mock) notifications; users **with** Telegram enabled get Telegram delivery. **Notification history records the delivery channel and status.**
+  - **SMSProvider** and **WhatsAppProvider** are **future** implementations of the same interface (no MVP work).
+- **Consequences:** A working, demoable notification system with zero external approval. The interface isolates channel specifics, so SMS/WhatsApp slot in later without touching reminder logic. Telegram Bot API is simple (bot token + chat id) and free. Trade-off: Telegram is less ubiquitous in India than WhatsApp, but it is unblocked today and proves the architecture.
+- **Revisit-when:** WhatsApp Business API approval lands (add WhatsAppProvider); DLT completes (add SMSProvider).
+
+### ADR-021 — Sequential migration naming (`0001`, `0002`, …), not timestamps
+- **Status:** Accepted (MVP)
+- **Context:** The repo ships `supabase/migrations/0001_init.sql` (sequential), but the remote project was migrated with the Supabase CLI's default **timestamp** names (`20260621031859_init`, `20260621032115_harden_set_updated_at_search_path`). The two conventions diverge, so `supabase db push` would treat the local `0001` as unapplied and the histories would drift.
+- **Decision:** **Sequential, zero-padded names are canonical** (`0001_init.sql`, `0002_family.sql`, `0003_…`). One migration file per PR/sprint; **never edit an applied migration** — add the next number. The remote history is realigned to sequential via `supabase migration repair` (commands tracked in `progress.md`).
+- **Consequences:** Predictable, reviewable ordering that matches the backlog/sprint plan and the CI psql loop (`for f in supabase/migrations/*.sql`). One-time repair needed to retire the two timestamp entries on the remote.
+- **Revisit-when:** Multiple developers create migrations concurrently and sequential numbers start colliding → reconsider timestamps with a merge discipline.
+
 ---
 
 ## Decision dependency map
 ```
 ADR-005 Supabase ──┬─► ADR-002 (Next+Supabase BFF) ──► ADR-001 (PWA)
                    ├─► ADR-004 (pgmq/pg_cron)  ──► ADR-008 (async pipeline)
-                   ├─► ADR-007 (phone OTP)
+                   ├─► ADR-019 (email OTP; supersedes ADR-007 phone OTP)
                    └─► ADR-011 (pgvector)
 ADR-003 Python AI ─► ADR-008 ─► ADR-010 (Claude) ─► ADR-012 (PHI residency tradeoff)
 ADR-006 FHIR-aware ─► ADR-013 (defer ABDM)
-ADR-014 WhatsApp (off critical path)   ADR-015 i18n   ADR-017 Razorpay   ADR-016 monorepo   ADR-018 hosting
+ADR-020 NotificationProvider (Mock + Telegram; supersedes ADR-014 WhatsApp)   ADR-015 i18n   ADR-017 Razorpay (test mode)   ADR-016 monorepo   ADR-018 hosting   ADR-021 sequential migrations
 ```

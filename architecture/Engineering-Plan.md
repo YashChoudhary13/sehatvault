@@ -23,7 +23,7 @@ sehatvault/
 │  ├─ i18n/                 # message catalogs (en, hi) + t() helpers (ADR-015)
 │  └─ config/               # eslint, tsconfig, tailwind preset, prettier — shared configs
 ├─ supabase/
-│  ├─ migrations/           # SQL migrations (source of truth for schema; see ../database/Schema.md)
+│  ├─ migrations/           # SQL migrations — sequential names 0001_,0002_,… (ADR-021); source of truth, see ../database/Schema.md
 │  ├─ policies/             # RLS policies (kept reviewable; applied via migrations)
 │  ├─ functions/            # Edge Functions (e.g., whatsapp-webhook later) — minimal at MVP
 │  └─ seed/                 # dev seed data (synthetic only)
@@ -43,7 +43,7 @@ App Router, Server Components by default, Server Actions for mutations, Route Ha
 ```
 apps/web/src/
 ├─ app/
-│  ├─ (auth)/login/                  # phone OTP
+│  ├─ (auth)/login/                  # email OTP (ADR-019)
 │  ├─ (app)/                         # authenticated shell (app-lock gate)
 │  │  ├─ page.tsx                    # Home / family switcher
 │  │  ├─ members/[memberId]/         # profile · timeline · trends · medicines
@@ -54,8 +54,8 @@ apps/web/src/
 │  │  ├─ ingest/route.ts             # upload → create record + enqueue pgmq job
 │  │  ├─ ai/callback/route.ts        # worker posts results back (service-role, signed)
 │  │  ├─ share/[token]/route.ts      # resolve + log share access
-│  │  ├─ cron/reminders/route.ts     # pg_cron → fire due reminders
-│  │  └─ webhooks/whatsapp/route.ts  # (Should) WhatsApp inbound
+│  │  ├─ cron/reminders/route.ts     # pg_cron → fire due reminders via NotificationProvider (ADR-020)
+│  │  └─ webhooks/telegram/route.ts  # Telegram bot webhook (opt-in notifications, ADR-020)
 │  └─ manifest.ts  sw.ts             # PWA manifest + service worker
 ├─ components/   hooks/   lib/supabase/{server,client,middleware}.ts
 └─ middleware.ts                     # session refresh + route protection

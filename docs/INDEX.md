@@ -1,6 +1,13 @@
 # SehatVault — Planning Workspace Index
 
-This workspace turns the product spec (`../README.md`) into an executable engineering plan. **No production code yet** — these are planning artifacts. Implementation begins only after sign-off (see `docs/Phase0-Architecture-Review.md` → final recommendation).
+This workspace turns the product spec (`../README.md`) into an executable engineering plan. Implementation has begun — **M0 (PR1) is merged**; see the project memory below for live status.
+
+## Project memory (start here for "what's the state and what's next")
+- **`../CLAUDE.md`** — primary project memory: overview, stack, conventions, current status, dev rules.
+- **`progress.md`** — living tracker: completed / in-progress / pending tasks, blockers, next actions.
+- **`pr-history/`** — retrospective summary per merged PR (start: `pr-history/pr1-foundation.md`).
+
+> Future sessions: read `../CLAUDE.md` + `progress.md` + the relevant PR summary first. The planning docs below are canonical *domain* references — open them only for depth.
 
 ## Reading order
 1. **`docs/Phase0-Architecture-Review.md`** — critical review of the spec vs. constraints; risks; what we cut and why. *Read this first.*

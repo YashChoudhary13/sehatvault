@@ -3,4 +3,5 @@
 project_id = "sehatvault"
 
 [db]
-major_version = 16
+# Match the remote project (ap-south-1 runs Postgres 17).
+major_version = 17
