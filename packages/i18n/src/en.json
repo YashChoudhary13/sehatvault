@@ -3,5 +3,13 @@
   "app.tagline": "Your family's health records, organised.",
   "nav.home": "Home",
   "nav.members": "Members",
-  "nav.reminders": "Reminders"
+  "nav.reminders": "Reminders",
+  "auth.login.title": "Sign in to SehatVault",
+  "auth.login.subtitle": "We'll email you a 6-digit code.",
+  "auth.login.emailLabel": "Email",
+  "auth.login.sendCode": "Send code",
+  "auth.login.codeSent": "Enter the code we emailed you.",
+  "auth.login.codeLabel": "6-digit code",
+  "auth.login.verify": "Verify & continue",
+  "auth.login.changeEmail": "Use a different email"
 }

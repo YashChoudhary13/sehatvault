@@ -3,5 +3,13 @@
   "app.tagline": "आपके परिवार के स्वास्थ्य रिकॉर्ड, व्यवस्थित।",
   "nav.home": "होम",
   "nav.members": "सदस्य",
-  "nav.reminders": "रिमाइंडर"
+  "nav.reminders": "रिमाइंडर",
+  "auth.login.title": "सेहत वॉल्ट में साइन इन करें",
+  "auth.login.subtitle": "हम आपको एक 6-अंकों का कोड ईमेल करेंगे।",
+  "auth.login.emailLabel": "ईमेल",
+  "auth.login.sendCode": "कोड भेजें",
+  "auth.login.codeSent": "हमने जो कोड ईमेल किया है उसे दर्ज करें।",
+  "auth.login.codeLabel": "6-अंकों का कोड",
+  "auth.login.verify": "सत्यापित करें और जारी रखें",
+  "auth.login.changeEmail": "दूसरा ईमेल उपयोग करें"
 }

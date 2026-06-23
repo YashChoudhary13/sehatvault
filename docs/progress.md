@@ -2,9 +2,11 @@
 
 > **Related docs:** [Planning](planning/Planning.md) · [Decisions](Decisions.md) · [Engineering-Plan](architecture/Engineering-Plan.md) · [DOCUMENTATION](DOCUMENTATION.md)
 
-> **Last updated:** 2026-06-22
-> **Current milestone:** M1 — Manual Vault (starting Sprint 2)
-> **Active branch:** `main` (Sprint 2 branch not yet created)
+> **Last updated:** 2026-06-23
+> **Current milestone:** M0 gate (Sprint 2 — auth + first RLS) in progress → M1 next
+> **Active branch:** `main`
+>
+> **▶ RESUME HERE (next session):** start **#3 — the RLS isolation test** (the M0 gate). Read order: `../CLAUDE.md` → this file → `planning/Planning.md` §5 (Sprint 2). Migration `0002_family.sql` is written + validated but **not yet applied** — run `supabase db push` first (no API keys needed). Email-OTP login (#1) + middleware (#2) are done and typecheck-green.
 
 ---
 
@@ -36,18 +38,18 @@
 
 ## In-Progress Tasks
 
-### Sprint 2 — Auth + First RLS *(next sprint — not yet started)*
+### Sprint 2 — Auth + First RLS *(in progress)*
 
 | Task | Status | Epic ref | Notes |
 |------|--------|----------|-------|
-| Migration `0002_family.sql` — `app_user`, `family`, `member_profile` + `auth_family_ids()` | ⬜ | E1.S1.2.T6 | Enums + 3 tables + helper function |
-| RLS policies for all three tables + `family` | ⬜ | E1.S1.2.T6 | 4 policies each; default-deny |
-| **RLS isolation test suite** added to CI | ⬜ | E1.S1.2.T7 | Family-A vs B; zero-leak invariant — this is the gate |
-| Email-OTP login screen (`app/(auth)/login/`) | ⬜ | E1.S1.2.T5 | Supabase Auth **Email OTP** (canonical); **no SMS** (ADR-019) |
-| `middleware.ts` — session refresh + route protection | ⬜ | E1.S1.2.T5 | Protects `(app)/` group |
+| Migration `0002_family.sql` — `app_user`, `family`, `member_profile` + `auth_family_ids()` | ✅ written + validated | E1.S1.2.T6 | Validated vs live PG17 (BEGIN/ROLLBACK). **Pending `supabase db push`** |
+| RLS policies for all three tables + `family` | ✅ | E1.S1.2.T6 | 4 policies each; default-deny; in `0002_family.sql` |
+| Email-OTP login screen (`app/(auth)/login/`) | ✅ | E1.S1.2.T5 | Supabase Auth Email OTP (ADR-019); send-code → verify; typecheck green |
+| `middleware.ts` — session refresh + route protection | ✅ | E1.S1.2.T5 | `src/middleware.ts` + `lib/supabase/middleware.ts`; protects all but `/login` |
+| **RLS isolation test suite** added to CI | ⬜ **← NEXT (#3, the gate)** | E1.S1.2.T7 | Family-A vs B; zero-leak invariant |
 | App-lock PIN (argon2 hash in `app_user.app_lock_hash`) | ⬜ | E1.S1.2.T8 | Client-side PIN; re-entry on resume |
-| i18n locale wired from `app_user.locale` | ⬜ | E1.S1.2.T8 | |
-| ~~Admin: DLT / WhatsApp / Razorpay KYC~~ → **deferred to future production** | ➖ | E1.S1.2.T9 | No longer MVP blockers (ADR-019/020); only domain/trademark check worth doing early |
+| i18n locale switching (wire from `app_user.locale`) | ⬜ | E1.S1.2.T8 | login strings added (en/hi); locale hardcoded "en" for now |
+| ~~Admin: DLT / WhatsApp / Razorpay KYC~~ → **deferred** | ➖ | E1.S1.2.T9 | Not MVP blockers (ADR-019/020) |
 
 **Sprint 2 exit gate (M0 milestone):**
 - [ ] New **email** can sign in (email OTP) and create a family + one member

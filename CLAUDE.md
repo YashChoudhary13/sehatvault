@@ -213,7 +213,7 @@ Full ADR list: see `docs/Decisions.md` (canonical, ADR-001..021). Key decisions:
 
 ## Current Implementation Status
 
-**As of 2026-06-22 — Milestone M0 complete (PR1 merged to main)**
+**As of 2026-06-23 — M0 done (PR1 merged); Sprint 2 (auth + first RLS) in progress.**
 
 ### What exists
 - ✅ Turborepo + pnpm 9 monorepo skeleton, Node 22, Tailwind v4
@@ -228,10 +228,14 @@ Full ADR list: see `docs/Decisions.md` (canonical, ADR-001..021). Key decisions:
 - ✅ Supabase client factories (`lib/supabase/server.ts` + `client.ts`)
 - ✅ Env validation via zod (`lib/env.ts`)
 - ✅ `.env.example` with all required key names
+- ✅ `supabase/migrations/0002_family.sql`: `app_user`/`family`/`member_profile` + `sex_type` + `auth_family_ids()` + RLS + signup auto-provision (**written + validated vs live PG17; not yet `db push`-ed**)
+- ✅ Email-OTP login (`app/(auth)/login/page.tsx`) + auth middleware (`src/middleware.ts`, `lib/supabase/middleware.ts`) — typecheck green
+- ✅ i18n `auth.login.*` strings (en + hi)
 
 ### What does NOT exist yet
-- ❌ Auth (email OTP login screen, sessions, middleware)
-- ❌ Any PHI tables (`app_user`, `family`, `member_profile`) or RLS policies
+- ⚠️ PHI tables/RLS are DEFINED in `0002_family.sql` but **not yet applied** to the remote (run `supabase db push`)
+- ❌ RLS isolation test (the M0 gate — **next: #3**)
+- ❌ App-lock PIN; i18n locale switching (login strings exist; locale hardcoded "en")
 - ❌ Member CRUD, document capture, encrypted storage
 - ❌ AI pipeline (`services/ai/` — entire directory)
 - ❌ Doctor share, reminders, consent dashboard
@@ -250,11 +254,8 @@ Full ADR list: see `docs/Decisions.md` (canonical, ADR-001..021). Key decisions:
 | M3 — Use & reach | ⏳ Planned | 11–13 |
 | M4 — Trust, billing & closed beta | ⏳ Planned | 14–16 |
 
-**Next sprint (Sprint 2):** Email-OTP login + first RLS
-- Migration `0002_family.sql` → `app_user`, `family`, `member_profile` tables + `auth_family_ids()` + RLS policies
-- Email-OTP login screen at `apps/web/src/app/(auth)/login/` (Supabase Auth email OTP; no SMS — ADR-019)
-- `middleware.ts` (session refresh + route protection)
-- RLS isolation test suite added to CI
+**Sprint 2 (in progress):** ✅ `0002_family.sql` migration (validated; pending `supabase db push`) · ✅ Email-OTP login (`app/(auth)/login/`) · ✅ auth middleware (`src/middleware.ts`).
+**▶ Next session — start #3: RLS isolation test in CI** (the M0 gate): seed family A + B, assert with B's JWT that A's rows are unreadable/unwritable across `app_user`/`family`/`member_profile`; fail CI on any cross-family read. Then: app-lock PIN, i18n locale switching. **First run `supabase db push`** to apply `0002` (no API keys needed). Read order to resume: this file → `docs/progress.md` (▶ RESUME HERE) → `docs/planning/Planning.md` §5.
 - App-lock PIN (argon2 hashing)
 - Complete i18n en/hi wiring
 
