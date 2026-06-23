@@ -5,9 +5,9 @@ import { useRouter } from "next/navigation";
 import { verifyAppLockPin } from "@/lib/pin-actions";
 import { PinPad } from "@/components/pin-pad";
 import { Button } from "@/components/ui/button";
-import { t } from "@sehatvault/i18n";
+import { LocaleProvider, useT } from "@/components/locale-provider";
+import type { Locale } from "@sehatvault/i18n";
 
-const LOCALE = "en" as const;
 const IDLE_MS = 5 * 60 * 1000;
 const SESSION_KEY = "sv_unlocked_at";
 
@@ -36,6 +36,7 @@ interface PinLockScreenProps {
 }
 
 function PinLockScreen({ onUnlock, onForgot }: PinLockScreenProps) {
+  const translate = useT();
   const [pin, setPin] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [rateLimited, setRateLimited] = useState(false);
@@ -55,7 +56,7 @@ function PinLockScreen({ onUnlock, onForgot }: PinLockScreenProps) {
     if (result.ok) {
       onUnlock();
     } else {
-      setError(t(LOCALE, "pin.lock.wrong"));
+      setError(translate("pin.lock.wrong"));
       setPin("");
     }
   }
@@ -64,14 +65,14 @@ function PinLockScreen({ onUnlock, onForgot }: PinLockScreenProps) {
     <main className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-8 bg-bg p-6">
       <div className="space-y-1 text-center">
         <h1 className="text-2xl font-bold text-primary-ink">
-          {t(LOCALE, "pin.lock.title")}
+          {translate("pin.lock.title")}
         </h1>
-        <p className="text-sm text-muted">{t(LOCALE, "pin.lock.subtitle")}</p>
+        <p className="text-sm text-muted">{translate("pin.lock.subtitle")}</p>
       </div>
 
       {rateLimited ? (
         <p className="max-w-xs text-center text-sm text-danger">
-          {t(LOCALE, "pin.lock.rateLimited")}
+          {translate("pin.lock.rateLimited")}
         </p>
       ) : (
         <form
@@ -94,7 +95,7 @@ function PinLockScreen({ onUnlock, onForgot }: PinLockScreenProps) {
             className="w-full"
             disabled={loading || pin.length < 4}
           >
-            {loading ? "…" : t(LOCALE, "pin.lock.unlock")}
+            {loading ? "…" : translate("pin.lock.unlock")}
           </Button>
         </form>
       )}
@@ -104,27 +105,26 @@ function PinLockScreen({ onUnlock, onForgot }: PinLockScreenProps) {
         onClick={onForgot}
         className="text-sm text-muted underline"
       >
-        {t(LOCALE, "pin.lock.forgot")}
+        {translate("pin.lock.forgot")}
       </button>
     </main>
   );
 }
 
-// ── AppShell — manages lock state, wraps authenticated children ────────────
-interface AppShellProps {
+// ── Lock gate — owns the session-freshness logic ───────────────────────────
+function AppLock({
+  hasPinSet,
+  children,
+}: {
   hasPinSet: boolean;
   children: React.ReactNode;
-}
-
-export function AppShell({ hasPinSet, children }: AppShellProps) {
+}) {
   const [isLocked, setIsLocked] = useState(false);
   const router = useRouter();
 
   // Determine initial lock state after mount (sessionStorage is client-only)
   useEffect(() => {
-    if (hasPinSet && !isSessionFresh()) {
-      setIsLocked(true);
-    }
+    if (hasPinSet && !isSessionFresh()) setIsLocked(true);
   }, [hasPinSet]);
 
   // Re-lock when the tab becomes visible after an idle period
@@ -153,6 +153,20 @@ export function AppShell({ hasPinSet, children }: AppShellProps) {
       />
     );
   }
-
   return <>{children}</>;
+}
+
+// ── AppShell — provides locale context then enforces the PIN gate ──────────
+interface AppShellProps {
+  hasPinSet: boolean;
+  locale: Locale;
+  children: React.ReactNode;
+}
+
+export function AppShell({ hasPinSet, locale, children }: AppShellProps) {
+  return (
+    <LocaleProvider initialLocale={locale}>
+      <AppLock hasPinSet={hasPinSet}>{children}</AppLock>
+    </LocaleProvider>
+  );
 }

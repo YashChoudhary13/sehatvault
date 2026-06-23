@@ -5,9 +5,7 @@ import { validatePin } from "@sehatvault/core";
 import { setAppLockPin, clearAppLockPin } from "@/lib/pin-actions";
 import { PinPad } from "@/components/pin-pad";
 import { Button } from "@/components/ui/button";
-import { t } from "@sehatvault/i18n";
-
-const LOCALE = "en" as const;
+import { useT } from "@/components/locale-provider";
 
 type SetupStep = "enter" | "confirm";
 type SetupMode = "setup" | "idle";
@@ -18,6 +16,7 @@ interface PinSetupProps {
 }
 
 export function PinSetup({ hasPinSet, onDone }: PinSetupProps) {
+  const translate = useT();
   const [mode, setMode] = useState<SetupMode>(hasPinSet ? "idle" : "setup");
   const [step, setStep] = useState<SetupStep>("enter");
   const [pin, setPin] = useState("");
@@ -34,12 +33,12 @@ export function PinSetup({ hasPinSet, onDone }: PinSetupProps) {
   }
 
   async function handleClear() {
-    if (!window.confirm(t(LOCALE, "pin.setup.clearConfirm"))) return;
+    if (!window.confirm(translate("pin.setup.clearConfirm"))) return;
     setLoading(true);
     const result = await clearAppLockPin();
     setLoading(false);
     if (result.ok) {
-      setMessage(t(LOCALE, "pin.setup.cleared"));
+      setMessage(translate("pin.setup.cleared"));
       resetForm();
       setMode("setup");
     } else {
@@ -52,7 +51,7 @@ export function PinSetup({ hasPinSet, onDone }: PinSetupProps) {
     setError(null);
     const validation = validatePin(pin);
     if (!validation.valid) {
-      setError(t(LOCALE, `pin.error.${validation.reason}`));
+      setError(translate(`pin.error.${validation.reason}`));
       return;
     }
     setStep("confirm");
@@ -62,7 +61,7 @@ export function PinSetup({ hasPinSet, onDone }: PinSetupProps) {
     e.preventDefault();
     setError(null);
     if (pin !== confirmPin) {
-      setError(t(LOCALE, "pin.setup.mismatch"));
+      setError(translate("pin.setup.mismatch"));
       setConfirmPin("");
       return;
     }
@@ -70,12 +69,12 @@ export function PinSetup({ hasPinSet, onDone }: PinSetupProps) {
     const result = await setAppLockPin(pin);
     setLoading(false);
     if (result.ok) {
-      setMessage(t(LOCALE, "pin.setup.success"));
+      setMessage(translate("pin.setup.success"));
       resetForm();
       setMode("idle");
       onDone?.();
     } else {
-      setError(t(LOCALE, `pin.error.${result.error}`) ?? result.error);
+      setError(translate(`pin.error.${result.error}`) ?? result.error);
       setConfirmPin("");
     }
   }
@@ -85,9 +84,9 @@ export function PinSetup({ hasPinSet, onDone }: PinSetupProps) {
       <div className="space-y-4">
         <div className="space-y-1">
           <h2 className="text-lg font-semibold text-primary-ink">
-            {t(LOCALE, "pin.setup.title")}
+            {translate("pin.setup.title")}
           </h2>
-          <p className="text-sm text-muted">{t(LOCALE, "pin.setup.subtitle")}</p>
+          <p className="text-sm text-muted">{translate("pin.setup.subtitle")}</p>
         </div>
         {message ? <p className="text-sm text-success">{message}</p> : null}
         <div className="flex flex-col gap-2">
@@ -106,7 +105,7 @@ export function PinSetup({ hasPinSet, onDone }: PinSetupProps) {
             disabled={loading}
             className="text-danger"
           >
-            {t(LOCALE, "pin.setup.clear")}
+            {translate("pin.setup.clear")}
           </Button>
         </div>
       </div>
@@ -117,15 +116,15 @@ export function PinSetup({ hasPinSet, onDone }: PinSetupProps) {
     <div className="space-y-6">
       <div className="space-y-1">
         <h2 className="text-lg font-semibold text-primary-ink">
-          {t(LOCALE, "pin.setup.title")}
+          {translate("pin.setup.title")}
         </h2>
-        <p className="text-sm text-muted">{t(LOCALE, "pin.setup.subtitle")}</p>
+        <p className="text-sm text-muted">{translate("pin.setup.subtitle")}</p>
       </div>
 
       {step === "enter" ? (
         <form onSubmit={handleEnterSubmit} className="space-y-6">
           <label className="block space-y-3">
-            <span className="text-sm font-medium">{t(LOCALE, "pin.setup.enter")}</span>
+            <span className="text-sm font-medium">{translate("pin.setup.enter")}</span>
             <PinPad value={pin} onChange={setPin} maxLength={6} autoFocus />
           </label>
           {error ? <p className="text-sm text-danger">{error}</p> : null}
@@ -136,7 +135,7 @@ export function PinSetup({ hasPinSet, onDone }: PinSetupProps) {
       ) : (
         <form onSubmit={handleConfirmSubmit} className="space-y-6">
           <label className="block space-y-3">
-            <span className="text-sm font-medium">{t(LOCALE, "pin.setup.confirm")}</span>
+            <span className="text-sm font-medium">{translate("pin.setup.confirm")}</span>
             <PinPad value={confirmPin} onChange={setConfirmPin} maxLength={6} autoFocus />
           </label>
           {error ? <p className="text-sm text-danger">{error}</p> : null}
@@ -145,7 +144,7 @@ export function PinSetup({ hasPinSet, onDone }: PinSetupProps) {
             className="w-full"
             disabled={loading || confirmPin.length < 4}
           >
-            {loading ? "…" : t(LOCALE, "pin.setup.set")}
+            {loading ? "…" : translate("pin.setup.set")}
           </Button>
           <button
             type="button"
