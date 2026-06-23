@@ -159,6 +159,21 @@ begin
   perform public.assert_rls(n = 2, 'B should be able to insert into its own family');
 end$$;
 
+-- Positive + negative control: app_lock_hash (PIN gate boundary).
+-- Positive: B can set its own PIN hash (convenience re-entry gate, not an auth boundary).
+-- Negative: explicit name in test output; proof is independent of the generic UPDATE block above.
+do $$
+declare n int;
+begin
+  update app_user set app_lock_hash = 'sentinel_hash' where id = auth.uid();
+  get diagnostics n = row_count;
+  perform public.assert_rls(n = 1, 'B should be able to set its own app_lock_hash');
+
+  update app_user set app_lock_hash = 'stolen' where id = '00000000-0000-0000-0000-00000000000a';
+  get diagnostics n = row_count;
+  perform public.assert_rls(n = 0, 'B must not overwrite A''s app_lock_hash');
+end$$;
+
 -- Default-deny: with no identity (no JWT), nothing is readable.
 \o /dev/null
 select set_config('request.jwt.claims', '', true);
@@ -202,6 +217,7 @@ begin
 end$$;
 
 \echo '✓ RLS isolation: family-B cannot read or write family-A across app_user/family/member_profile'
+\echo '✓ app_lock_hash: B can set own PIN hash; cannot overwrite A''s'
 \echo '✓ function-grant hardening (0003): RPC surface locked down on SECURITY DEFINER helpers'
 
 rollback;
