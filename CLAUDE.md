@@ -234,7 +234,7 @@ Full ADR list: see `docs/Decisions.md` (canonical, ADR-001..021). Key decisions:
 - ✅ **RLS isolation test (the M0 gate, #3)**: `supabase/tests/00_bootstrap_auth.sql` (vanilla-PG auth stub) + `rls_isolation.test.sql` (family-B vs A, read **and** write, all three tables) + `run-rls-tests.sh`; CI `db` job runs stub→migrations→test on PG17. Verified locally: green when isolated, fails on an injected cross-family leak.
 
 ### What does NOT exist yet
-- ⚠️ PHI tables/RLS are DEFINED in `0002_family.sql` but **not yet applied** to the remote (run `supabase db push` after the migration-history repair)
+- ✅ PHI tables/RLS from `0002_family.sql` are **applied to the remote** (prod history `0001`/`0002`, clean sequential). `0003_harden_function_grants.sql` is committed + CI-gated, **pending `supabase db push`** (runbook: `docs/ops/DB-Migrations.md`)
 - ❌ App-lock PIN; i18n locale switching (login strings exist; locale hardcoded "en")
 - ❌ Member CRUD, document capture, encrypted storage
 - ❌ AI pipeline (`services/ai/` — entire directory)
@@ -254,7 +254,7 @@ Full ADR list: see `docs/Decisions.md` (canonical, ADR-001..021). Key decisions:
 | M3 — Use & reach | ⏳ Planned | 11–13 |
 | M4 — Trust, billing & closed beta | ⏳ Planned | 14–16 |
 
-**Sprint 2 (in progress):** ✅ `0002_family.sql` migration (validated; pending `supabase db push`) · ✅ Email-OTP login (`app/(auth)/login/`) · ✅ auth middleware (`src/middleware.ts`) · ✅ **#3 RLS isolation test** (`supabase/tests/` + CI `db` job; the M0 gate — family-B can't read/write family-A across all three tables).
+**Sprint 2 (in progress):** ✅ `0002_family.sql` migration (**applied to prod**; history `0001`/`0002`) · ✅ Email-OTP login (`app/(auth)/login/`) · ✅ auth middleware (`src/middleware.ts`) · ✅ **#3 RLS isolation test** (`supabase/tests/` + CI `db` job; the M0 gate — family-B can't read/write family-A across all three tables) · ✅ `0003_harden_function_grants` (committed + CI-gated; pending prod push).
 **▶ Next session — app-lock PIN** (argon2 hash in `app_user.app_lock_hash`, client-side, re-entry on resume), then **i18n locale switching** (wire from `app_user.locale`; en/hi login strings already exist). Ops still pending: `supabase db push` to apply `0002` to the remote (after migration-history repair; no API keys needed). Read order to resume: this file → `docs/progress.md` (▶ RESUME HERE) → `docs/planning/Planning.md` §5.
 - App-lock PIN (argon2 hashing)
 - Complete i18n en/hi wiring
@@ -267,9 +267,10 @@ Full ADR list: see `docs/Decisions.md` (canonical, ADR-001..021). Key decisions:
 
 | Item | Priority | Notes |
 |------|----------|-------|
-| **Supabase migration history repair** | **Only open technical blocker** | Remote has 2 timestamp migrations; local is sequential `0001` (ADR-021). Realign before `0002_family.sql`; needs CLI linked. |
+| ~~Supabase migration history repair~~ | ✅ **Resolved** (2026-06-23) | Remote realigned to sequential `0001`/`0002`; `0002_family.sql` applied to prod. Runbook: `docs/ops/DB-Migrations.md`. |
+| Apply `0003_harden_function_grants.sql` to prod | Low | Function-grant hardening (advisors 0028/0029); committed + CI-gated; run `supabase db push` (operator). |
 
-> **Migration repair is the only remaining technical blocker.** No external-approval blockers on the MVP critical path — Email OTP (ADR-019) removes DLT/SMS; Mock + Telegram (ADR-020) remove WhatsApp; billing is Razorpay test-mode.
+> **No remaining technical blockers on the MVP critical path.** Migration repair is resolved; remote schema is aligned to committed `0001`/`0002`. No external-approval blockers — Email OTP (ADR-019) removes DLT/SMS; Mock + Telegram (ADR-020) remove WhatsApp; billing is Razorpay test-mode.
 >
 > **Not blockers (risk/setup):** extraction accuracy (T1 — build the 50-doc eval set before trusting M2 AI); Telegram bot token (@BotFather, only for real delivery — Mock needs nothing).
 >

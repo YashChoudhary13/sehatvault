@@ -32,8 +32,10 @@ pnpm dev                       # Next.js app at http://localhost:3000
 
 ## Migrations (sequential — ADR-021)
 - Source of truth: `supabase/migrations/0001_init.sql`, `0002_…` — **sequential names, never timestamps**.
-- Apply to the linked project: `supabase db push`. CI also applies them to an ephemeral Postgres.
-- Remote history is currently sequential `0001`.
+- Apply to the linked project: `supabase db push`. CI also applies them to an ephemeral Postgres
+  and runs the RLS isolation gate (`db` job → `supabase/tests/`).
+- **Full operator runbook** (project ref, credentials, verify, drift repair): [`ops/DB-Migrations.md`](ops/DB-Migrations.md).
+- Remote history: sequential `0001`/`0002` applied; `0003_harden_function_grants` pending a push.
 
 ## Quality gate (what CI runs)
 ```bash

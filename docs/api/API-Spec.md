@@ -40,7 +40,10 @@ POST /auth/logout         → 204
 ```
 - Implemented via **Supabase Auth email OTP** (magic-link / 6-digit code; ADR-019). Rate-limited per email + per IP. SMS/phone OTP is deferred (see Planning "Pivots").
 - On first verify, a trigger creates `app_user` + a default `family` ("My Family"). The client then runs onboarding (add first member).
-- **App-lock** is client-side: `PUT /me/app-lock { "pin": "1234" }` stores `app_lock_hash` (argon2); re-entry is local, not a server round-trip.
+- **App-lock** gates re-entry to an *already-authenticated* session (a convenience boundary, not an auth boundary). Set and verify both run **server-side as Server Actions** so the argon2 hash never leaves the server (decision 2026-06-23, supersedes the earlier "local, no round-trip" note):
+  - **Set:** `setAppLockPin(pin)` → argon2 hash → update `app_user.app_lock_hash` (RLS: own row only).
+  - **Verify (re-entry):** `verifyAppLockPin(pin)` → `argon2.verify(stored_hash, pin)` → `{ ok }` (one lightweight round-trip).
+  - WebAuthn/biometric is an optional future enhancement (Security-Plan).
 
 ---
 

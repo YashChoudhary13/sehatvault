@@ -6,7 +6,7 @@
 > **Current milestone:** M0 gate (Sprint 2 — auth + first RLS) in progress → M1 next
 > **Active branch:** `main`
 >
-> **▶ RESUME HERE (next session):** #3 (RLS isolation test, the M0 gate) is **done** — see `supabase/tests/` and the `db` CI job. Next: **app-lock PIN** (argon2) + **i18n locale switching** (wire from `app_user.locale`). Read order: `../CLAUDE.md` → this file → `planning/Planning.md` §5 (Sprint 2). Still pending on the ops side: run `supabase db push` to apply `0002_family.sql` to the remote (after the migration-history repair; no API keys needed). Email-OTP login (#1) + middleware (#2) + RLS test (#3) are done.
+> **▶ RESUME HERE (next session):** Remote schema is **aligned** — `0001`/`0002` applied to prod, history clean sequential, migration-repair blocker **resolved** (runbook: `ops/DB-Migrations.md`). `0003_harden_function_grants.sql` is committed + CI-gated, **pending a `supabase db push`** to prod. #3 (RLS isolation test, the M0 gate) is done. Next feature: **app-lock PIN** (argon2; `app_user.app_lock_hash` column already exists) then **i18n locale switching** (wire from `app_user.locale`). Read order: `../CLAUDE.md` → this file → `planning/Planning.md` §5 (Sprint 2).
 
 > **How to run the RLS gate locally:** `DATABASE_URL=postgres://…@host/db ./supabase/tests/run-rls-tests.sh` against a **disposable** Postgres (the script applies `00_bootstrap_auth.sql` → migrations → `rls_isolation.test.sql`). CI runs the same sequence in the `db` job on every push/PR.
 
@@ -49,9 +49,18 @@
 | Email-OTP login screen (`app/(auth)/login/`) | ✅ | E1.S1.2.T5 | Supabase Auth Email OTP (ADR-019); send-code → verify; typecheck green |
 | `middleware.ts` — session refresh + route protection | ✅ | E1.S1.2.T5 | `src/middleware.ts` + `lib/supabase/middleware.ts`; protects all but `/login` |
 | **RLS isolation test suite** added to CI | ✅ | E1.S1.2.T7 | `supabase/tests/` (auth stub + `rls_isolation.test.sql`); CI `db` job runs stub→migrations→test on PG17; verified locally (green isolated, red on injected leak) |
-| App-lock PIN (argon2 hash in `app_user.app_lock_hash`) | ⬜ **← NEXT** | E1.S1.2.T8 | Client-side PIN; re-entry on resume |
+| App-lock PIN (argon2 hash in `app_user.app_lock_hash`) | ⬜ **← NEXT (plan ready)** | E1.S1.2.T8 | **Server-verify** (decision 2026-06-23). See plan below. |
 | i18n locale switching (wire from `app_user.locale`) | ⬜ | E1.S1.2.T8 | login strings added (en/hi); locale hardcoded "en" for now |
 | ~~Admin: DLT / WhatsApp / Razorpay KYC~~ → **deferred** | ➖ | E1.S1.2.T9 | Not MVP blockers (ADR-019/020) |
+
+**▶ Next feature — App-lock PIN (E1.S1.2.T8) — implementation plan (server-verify, decided 2026-06-23):**
+- **Guarantees:** a convenience re-entry gate over an *already-authenticated* session (not an auth boundary). 4–6 digit PIN; argon2 hash stored server-side in `app_user.app_lock_hash`; the hash never reaches the browser.
+- **No DB/RLS change needed:** `app_lock_hash` already exists (`0002`); `app_user` is already RLS-isolated (user can only read/update own row) and covered by the RLS harness. Optional: add one positive-control assertion to `rls_isolation.test.sql` that a user CAN update its own `app_lock_hash` (and B still cannot update A's).
+- **Domain logic (`packages/core`, framework-free, Vitest-first):** PIN policy/validation (length, digits-only, blocklist of trivial PINs e.g. `0000`/`1234`). Keep argon2 calls out of `core` (Node-only dep); core holds pure validation.
+- **Server Actions (`apps/web`):** `setAppLockPin(pin)` → validate (zod) → `argon2.hash` → update own `app_user` row via RLS client; `verifyAppLockPin(pin)` → fetch own `app_lock_hash` → `argon2.verify` → `{ ok }`. Rate-limit verify attempts. Never log the PIN or hash. Use the `@node-rs/argon2` (or `argon2`) lib, server-only.
+- **UI:** PIN setup in Settings; a re-entry lock screen in the `(app)` shell shown on resume/after idle; "forgot PIN" = re-auth via email OTP then reset. Respect elder-mode sizing.
+- **CI/tests:** Vitest for the core PIN policy; Server Action contract test (zod) ; extend the existing RLS harness as above — do **not** add an ad-hoc test path. No "dev-only" mode.
+- **Then:** i18n locale switching (wire `app_user.locale` → `t()`), the remaining Sprint 2 item.
 
 **Sprint 2 exit gate (M0 milestone):**
 - [ ] New **email** can sign in (email OTP) and create a family + one member
@@ -134,11 +143,12 @@
 
 ## Blockers
 
-> **Migration history repair is the ONLY remaining technical blocker.** No external-approval blockers on the MVP critical path — email OTP (ADR-019) removes DLT/SMS; Mock + Telegram (ADR-020) remove WhatsApp; billing is Razorpay test-mode.
+> **No remaining technical blockers on the MVP critical path.** The Supabase migration-history repair is **resolved** — remote history is clean sequential `0001`/`0002`, and `0002_family.sql` is applied to prod (see `ops/DB-Migrations.md`). No external-approval blockers — email OTP (ADR-019) removes DLT/SMS; Mock + Telegram (ADR-020) remove WhatsApp; billing is Razorpay test-mode.
 
 | Blocker | Impact | Status |
 |---------|--------|--------|
-| **Supabase migration history repair** | Remote has 2 timestamp migrations; local is sequential `0001` (ADR-021). `db push` drifts until repaired. | ⬜ **Only open blocker** — needs CLI linked; run before `0002_family.sql` |
+| ~~Supabase migration history repair~~ | Remote history realigned to sequential `0001`/`0002`; `0002_family.sql` applied to prod. | ✅ **Resolved** (2026-06-23) — runbook: `ops/DB-Migrations.md` |
+| Apply `0003_harden_function_grants.sql` to prod | Function-grant hardening (advisors 0028/0029); committed + CI-gated, not yet pushed. | ⬜ Run `supabase db push` (operator, per runbook) |
 
 ### Not blockers (setup / risk)
 | Item | Note |
