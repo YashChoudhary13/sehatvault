@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@node-rs/argon2": "^2.0.2",
     "@radix-ui/react-slot": "^1.1.1",
     "@sehatvault/core": "workspace:*",
     "@sehatvault/i18n": "workspace:*",
