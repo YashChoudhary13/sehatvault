@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@hookform/resolvers": "^5.4.0",
     "@node-rs/argon2": "^2.0.2",
     "@radix-ui/react-slot": "^1.1.1",
     "@sehatvault/core": "workspace:*",
@@ -20,10 +21,12 @@
     "clsx": "^2.1.1",
     "lucide-react": "^1.21.0",
     "next": "^15.1.3",
+    "radix-ui": "^1.6.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-hook-form": "^7.80.0",
     "tailwind-merge": "^2.6.0",
-    "zod": "^3.24.1"
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@sehatvault/config": "workspace:*",
