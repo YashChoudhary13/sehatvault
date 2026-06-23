@@ -6,6 +6,7 @@ import { verifyAppLockPin } from "@/lib/pin-actions";
 import { PinPad } from "@/components/pin-pad";
 import { Button } from "@/components/ui/button";
 import { LocaleProvider, useT } from "@/components/locale-provider";
+import { MainNav } from "@/components/main-nav";
 import type { Locale } from "@sehatvault/i18n";
 
 const IDLE_MS = 5 * 60 * 1000;
@@ -153,7 +154,24 @@ function AppLock({
       />
     );
   }
-  return <>{children}</>;
+
+  return (
+    <>
+      <MainNav />
+      {/*
+       * Content offset: desktop gets left margin for side rail (w-56 = 224px).
+       * Mobile gets bottom padding tall enough to clear the tab bar + iOS home indicator.
+       */}
+      <div
+        className="min-h-dvh md:pl-56"
+        style={{
+          paddingBottom: "calc(4rem + env(safe-area-inset-bottom, 0px))",
+        }}
+      >
+        {children}
+      </div>
+    </>
+  );
 }
 
 // ── AppShell — provides locale context then enforces the PIN gate ──────────
