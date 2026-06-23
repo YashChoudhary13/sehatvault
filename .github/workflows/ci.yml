@@ -30,7 +30,7 @@ jobs:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: postgres:16
+        image: postgres:17
         env:
           POSTGRES_PASSWORD: postgres
         ports:
@@ -40,13 +40,25 @@ jobs:
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
+    env:
+      PGPASSWORD: postgres
+      PSQL: psql -h localhost -U postgres -d postgres -v ON_ERROR_STOP=1
     steps:
       - uses: actions/checkout@v4
+
+      # Stub the Supabase-managed auth surface (auth.users, auth.uid(), roles) so the PHI
+      # migrations apply unchanged on vanilla Postgres. TEST-ONLY — never pushed to Supabase.
+      - name: Bootstrap auth stub
+        run: $PSQL -f supabase/tests/00_bootstrap_auth.sql
+
       - name: Apply migrations to ephemeral Postgres
-        env:
-          PGPASSWORD: postgres
         run: |
           for f in supabase/migrations/*.sql; do
             echo "Applying $f"
-            psql -h localhost -U postgres -d postgres -v ON_ERROR_STOP=1 -f "$f"
+            $PSQL -f "$f"
           done
+
+      # M0 gate (ADR: every PHI table ships with its RLS isolation test). A cross-family
+      # read/write leak RAISEs, which fails this step and blocks the merge.
+      - name: RLS isolation test (zero cross-family leak)
+        run: $PSQL -f supabase/tests/rls_isolation.test.sql

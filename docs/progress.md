@@ -6,7 +6,9 @@
 > **Current milestone:** M0 gate (Sprint 2 — auth + first RLS) in progress → M1 next
 > **Active branch:** `main`
 >
-> **▶ RESUME HERE (next session):** start **#3 — the RLS isolation test** (the M0 gate). Read order: `../CLAUDE.md` → this file → `planning/Planning.md` §5 (Sprint 2). Migration `0002_family.sql` is written + validated but **not yet applied** — run `supabase db push` first (no API keys needed). Email-OTP login (#1) + middleware (#2) are done and typecheck-green.
+> **▶ RESUME HERE (next session):** #3 (RLS isolation test, the M0 gate) is **done** — see `supabase/tests/` and the `db` CI job. Next: **app-lock PIN** (argon2) + **i18n locale switching** (wire from `app_user.locale`). Read order: `../CLAUDE.md` → this file → `planning/Planning.md` §5 (Sprint 2). Still pending on the ops side: run `supabase db push` to apply `0002_family.sql` to the remote (after the migration-history repair; no API keys needed). Email-OTP login (#1) + middleware (#2) + RLS test (#3) are done.
+
+> **How to run the RLS gate locally:** `DATABASE_URL=postgres://…@host/db ./supabase/tests/run-rls-tests.sh` against a **disposable** Postgres (the script applies `00_bootstrap_auth.sql` → migrations → `rls_isolation.test.sql`). CI runs the same sequence in the `db` job on every push/PR.
 
 ---
 
@@ -46,15 +48,15 @@
 | RLS policies for all three tables + `family` | ✅ | E1.S1.2.T6 | 4 policies each; default-deny; in `0002_family.sql` |
 | Email-OTP login screen (`app/(auth)/login/`) | ✅ | E1.S1.2.T5 | Supabase Auth Email OTP (ADR-019); send-code → verify; typecheck green |
 | `middleware.ts` — session refresh + route protection | ✅ | E1.S1.2.T5 | `src/middleware.ts` + `lib/supabase/middleware.ts`; protects all but `/login` |
-| **RLS isolation test suite** added to CI | ⬜ **← NEXT (#3, the gate)** | E1.S1.2.T7 | Family-A vs B; zero-leak invariant |
-| App-lock PIN (argon2 hash in `app_user.app_lock_hash`) | ⬜ | E1.S1.2.T8 | Client-side PIN; re-entry on resume |
+| **RLS isolation test suite** added to CI | ✅ | E1.S1.2.T7 | `supabase/tests/` (auth stub + `rls_isolation.test.sql`); CI `db` job runs stub→migrations→test on PG17; verified locally (green isolated, red on injected leak) |
+| App-lock PIN (argon2 hash in `app_user.app_lock_hash`) | ⬜ **← NEXT** | E1.S1.2.T8 | Client-side PIN; re-entry on resume |
 | i18n locale switching (wire from `app_user.locale`) | ⬜ | E1.S1.2.T8 | login strings added (en/hi); locale hardcoded "en" for now |
 | ~~Admin: DLT / WhatsApp / Razorpay KYC~~ → **deferred** | ➖ | E1.S1.2.T9 | Not MVP blockers (ADR-019/020) |
 
 **Sprint 2 exit gate (M0 milestone):**
 - [ ] New **email** can sign in (email OTP) and create a family + one member
-- [ ] Automated RLS test proves family-B cannot read family-A's member (zero-leak)
-- [ ] CI green on clean clone; one-command bootstrap works
+- [x] Automated RLS test proves family-B cannot read **or write** family-A's rows across `app_user`/`family`/`member_profile` (zero-leak) — `supabase/tests/rls_isolation.test.sql`, wired into the CI `db` job
+- [ ] CI green on clean clone; one-command bootstrap works *(RLS `db` job verified locally on PG17; full CI confirms on push)*
 
 ---
 

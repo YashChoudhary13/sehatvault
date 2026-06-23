@@ -231,10 +231,10 @@ Full ADR list: see `docs/Decisions.md` (canonical, ADR-001..021). Key decisions:
 - ✅ `supabase/migrations/0002_family.sql`: `app_user`/`family`/`member_profile` + `sex_type` + `auth_family_ids()` + RLS + signup auto-provision (**written + validated vs live PG17; not yet `db push`-ed**)
 - ✅ Email-OTP login (`app/(auth)/login/page.tsx`) + auth middleware (`src/middleware.ts`, `lib/supabase/middleware.ts`) — typecheck green
 - ✅ i18n `auth.login.*` strings (en + hi)
+- ✅ **RLS isolation test (the M0 gate, #3)**: `supabase/tests/00_bootstrap_auth.sql` (vanilla-PG auth stub) + `rls_isolation.test.sql` (family-B vs A, read **and** write, all three tables) + `run-rls-tests.sh`; CI `db` job runs stub→migrations→test on PG17. Verified locally: green when isolated, fails on an injected cross-family leak.
 
 ### What does NOT exist yet
-- ⚠️ PHI tables/RLS are DEFINED in `0002_family.sql` but **not yet applied** to the remote (run `supabase db push`)
-- ❌ RLS isolation test (the M0 gate — **next: #3**)
+- ⚠️ PHI tables/RLS are DEFINED in `0002_family.sql` but **not yet applied** to the remote (run `supabase db push` after the migration-history repair)
 - ❌ App-lock PIN; i18n locale switching (login strings exist; locale hardcoded "en")
 - ❌ Member CRUD, document capture, encrypted storage
 - ❌ AI pipeline (`services/ai/` — entire directory)
@@ -254,8 +254,8 @@ Full ADR list: see `docs/Decisions.md` (canonical, ADR-001..021). Key decisions:
 | M3 — Use & reach | ⏳ Planned | 11–13 |
 | M4 — Trust, billing & closed beta | ⏳ Planned | 14–16 |
 
-**Sprint 2 (in progress):** ✅ `0002_family.sql` migration (validated; pending `supabase db push`) · ✅ Email-OTP login (`app/(auth)/login/`) · ✅ auth middleware (`src/middleware.ts`).
-**▶ Next session — start #3: RLS isolation test in CI** (the M0 gate): seed family A + B, assert with B's JWT that A's rows are unreadable/unwritable across `app_user`/`family`/`member_profile`; fail CI on any cross-family read. Then: app-lock PIN, i18n locale switching. **First run `supabase db push`** to apply `0002` (no API keys needed). Read order to resume: this file → `docs/progress.md` (▶ RESUME HERE) → `docs/planning/Planning.md` §5.
+**Sprint 2 (in progress):** ✅ `0002_family.sql` migration (validated; pending `supabase db push`) · ✅ Email-OTP login (`app/(auth)/login/`) · ✅ auth middleware (`src/middleware.ts`) · ✅ **#3 RLS isolation test** (`supabase/tests/` + CI `db` job; the M0 gate — family-B can't read/write family-A across all three tables).
+**▶ Next session — app-lock PIN** (argon2 hash in `app_user.app_lock_hash`, client-side, re-entry on resume), then **i18n locale switching** (wire from `app_user.locale`; en/hi login strings already exist). Ops still pending: `supabase db push` to apply `0002` to the remote (after migration-history repair; no API keys needed). Read order to resume: this file → `docs/progress.md` (▶ RESUME HERE) → `docs/planning/Planning.md` §5.
 - App-lock PIN (argon2 hashing)
 - Complete i18n en/hi wiring
 
@@ -280,7 +280,7 @@ Full ADR list: see `docs/Decisions.md` (canonical, ADR-001..021). Key decisions:
 ## Development Rules for Future Sessions
 
 1. **Read `docs/progress.md` first** — it has the exact current sprint and next task.
-2. **RLS is non-negotiable.** Every new PHI table must have 4 RLS policies using `auth_family_ids()` AND a CI isolation test in the same PR.
+2. **RLS is non-negotiable.** Every new PHI table must have 4 RLS policies using `auth_family_ids()` AND a CI isolation test in the same PR — extend `supabase/tests/rls_isolation.test.sql` (the harness + auth stub already exist; the CI `db` job runs it). Verify locally with `supabase/tests/run-rls-tests.sh` against a disposable Postgres.
 3. **No secrets committed** — `.env.example` has names only. Real values live in Vercel / Render / Supabase env settings.
 4. **Service-role key = server/worker only.** Never `NEXT_PUBLIC_*`, never shipped to the browser.
 5. **Do not build the Python AI service before Sprint 7.** Building AI before the manual vault is the #1 delivery risk.
