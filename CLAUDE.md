@@ -213,33 +213,41 @@ Full ADR list: see `docs/Decisions.md` (canonical, ADR-001..021). Key decisions:
 
 ## Current Implementation Status
 
-**As of 2026-06-23 — M0 done (PR1 merged); Sprint 2 (auth + first RLS) in progress.**
+**As of 2026-06-23 — M0 complete; Sprints 2 + 3 complete; Sprint 4 (Capture & Storage) is next.**
 
 ### What exists
 - ✅ Turborepo + pnpm 9 monorepo skeleton, Node 22, Tailwind v4
-- ✅ `apps/web`: Next.js 15 PWA placeholder page with Warm-Trust themed Button
+- ✅ `apps/web`: Next.js 15 PWA with Warm-Trust themed UI
 - ✅ `packages/config`: tsconfig.base, ESLint 9 flat config, Prettier, `theme.css` (Warm Trust design tokens)
-- ✅ `packages/core`: `appVersion()` + `isNonEmptyName()` with passing Vitest test
-- ✅ `packages/i18n`: en/hi message catalogs with `t()` helper
-- ✅ `supabase/migrations/0001_init.sql`: pgcrypto extension + `set_updated_at()` trigger (no PHI tables)
+- ✅ `packages/core`: `appVersion()` + `isNonEmptyName()` + PIN validation (`validatePin()`) + `InsertMemberSchema` — Vitest green
+- ✅ `packages/i18n`: en/hi catalogs with `t()` helper; `auth.login.*`, `pin.*`, `nav.*`, `members.form.*`, `members.profile.*` keys
+- ✅ `supabase/migrations/0001_init.sql`: pgcrypto + `set_updated_at()` trigger
+- ✅ `supabase/migrations/0002_family.sql`: `app_user`/`family`/`member_profile` + `auth_family_ids()` + RLS — **applied to prod** (history `0001`/`0002` sequential)
+- ✅ `supabase/migrations/0003_harden_function_grants.sql`: function-grant hardening — committed + CI-gated, **pending `supabase db push`** to prod (runbook: `docs/ops/DB-Migrations.md`)
 - ✅ `supabase/config.toml` + `seed/seed.sql`
-- ✅ `.github/workflows/ci.yml`: lint + typecheck + unit tests + web build + ephemeral Postgres migration check
-- ✅ Sentry init stub (`apps/web/src/lib/sentry.ts`)
-- ✅ Supabase client factories (`lib/supabase/server.ts` + `client.ts`)
-- ✅ Env validation via zod (`lib/env.ts`)
-- ✅ `.env.example` with all required key names
-- ✅ `supabase/migrations/0002_family.sql`: `app_user`/`family`/`member_profile` + `sex_type` + `auth_family_ids()` + RLS + signup auto-provision (**written + validated vs live PG17; not yet `db push`-ed**)
-- ✅ Email-OTP login (`app/(auth)/login/page.tsx`) + auth middleware (`src/middleware.ts`, `lib/supabase/middleware.ts`) — typecheck green
-- ✅ i18n `auth.login.*` strings (en + hi)
-- ✅ **RLS isolation test (the M0 gate, #3)**: `supabase/tests/00_bootstrap_auth.sql` (vanilla-PG auth stub) + `rls_isolation.test.sql` (family-B vs A, read **and** write, all three tables) + `run-rls-tests.sh`; CI `db` job runs stub→migrations→test on PG17. Verified locally: green when isolated, fails on an injected cross-family leak.
+- ✅ `.github/workflows/ci.yml`: lint + typecheck + unit tests + build + RLS isolation gate (PG17 ephemeral)
+- ✅ RLS isolation test suite: `supabase/tests/` — auth stub + `rls_isolation.test.sql` (family-B vs A, read + write, all tables + `app_lock_hash` boundary); `run-rls-tests.sh`
+- ✅ Sentry init stub + Supabase client factories + zod env validation + `.env.example`
+- ✅ Email-OTP login (`app/(auth)/login/`) + session middleware (`src/middleware.ts`)
+- ✅ App-lock PIN: `setAppLockPin` / `verifyAppLockPin` / `clearAppLockPin` Server Actions; `@node-rs/argon2` hash stored server-side in `app_user.app_lock_hash`; rate-limited; `PinSetup` in Settings; `AppLock` re-entry lock screen in `(app)` shell; hash never sent to browser
+- ✅ i18n locale switching: `LocaleProvider` + `useT()` hook; `updateUserLocale` Server Action; `LocaleSwitcher` in Settings; wired to `app_user.locale`
+- ✅ `AppShell` + `MainNav`: mobile bottom tab bar (`< md`) + desktop side rail (`>= md`); iOS safe-area via `env(safe-area-inset-bottom)`; `viewport: { viewportFit: "cover" }` in root layout
+- ✅ `EmptyState` component + Home / family view (Server Component; parallel-fetches locale + members)
+- ✅ Full member CRUD: `createMember` / `updateMember` / `deleteMember` Server Actions (RLS-scoped via `auth_family_ids()`; no PHI logged)
+- ✅ Shared `MemberForm` client component (`initialData?: MemberFormInitialData`; joins/splits arrays ↔ comma-strings)
+- ✅ `DeleteMemberButton`: shadcn `AlertDialog` confirm dialog; `useTransition`; `danger` button variant (Warm Trust token)
+- ✅ Member Create (`/members/new`), Profile (`/members/[id]`), Edit (`/members/[id]/edit`) pages — build green, 7 routes
+- ✅ shadcn primitives in `apps/web/src/components/ui/`: `alert-dialog`, `form`, `input`, `select`, `label`, `button` (+ `danger` variant)
 
 ### What does NOT exist yet
-- ✅ PHI tables/RLS from `0002_family.sql` are **applied to the remote** (prod history `0001`/`0002`, clean sequential). `0003_harden_function_grants.sql` is committed + CI-gated, **pending `supabase db push`** (runbook: `docs/ops/DB-Migrations.md`)
-- ❌ App-lock PIN; i18n locale switching (login strings exist; locale hardcoded "en")
-- ❌ Member CRUD, document capture, encrypted storage
-- ❌ AI pipeline (`services/ai/` — entire directory)
-- ❌ Doctor share, reminders, consent dashboard
-- ❌ `packages/db` (generated Supabase types — Sprint 2)
+- ❌ Document capture (`CaptureSheet` — camera/gallery/PDF) — **Sprint 4 next**
+- ❌ Supabase Storage private `documents` bucket + storage RLS policies — **Sprint 4 next**
+- ❌ `health_record` table + pgmq extension + `migration 0004` — **Sprint 4 next**
+- ❌ `POST /api/ingest` route handler + pgmq job enqueue — **Sprint 4 next**
+- ❌ Signed-URL document viewer + 403-without-auth test — **Sprint 4 gate**
+- ❌ AI pipeline (`services/ai/` — entire directory) — Sprint 7
+- ❌ Doctor share, reminders, consent dashboard — Sprints 11–16
+- ❌ `packages/db` (generated Supabase types) — add after `0004` is applied
 - ❌ `packages/ui` (promoted from `apps/web/components/ui` lazily)
 
 ---
@@ -254,10 +262,9 @@ Full ADR list: see `docs/Decisions.md` (canonical, ADR-001..021). Key decisions:
 | M3 — Use & reach | ⏳ Planned | 11–13 |
 | M4 — Trust, billing & closed beta | ⏳ Planned | 14–16 |
 
-**Sprint 2 (in progress):** ✅ `0002_family.sql` migration (**applied to prod**; history `0001`/`0002`) · ✅ Email-OTP login (`app/(auth)/login/`) · ✅ auth middleware (`src/middleware.ts`) · ✅ **#3 RLS isolation test** (`supabase/tests/` + CI `db` job; the M0 gate — family-B can't read/write family-A across all three tables) · ✅ `0003_harden_function_grants` (committed + CI-gated; pending prod push).
-**▶ Next session — app-lock PIN** (argon2 hash in `app_user.app_lock_hash`, client-side, re-entry on resume), then **i18n locale switching** (wire from `app_user.locale`; en/hi login strings already exist). Ops still pending: `supabase db push` to apply `0002` to the remote (after migration-history repair; no API keys needed). Read order to resume: this file → `docs/progress.md` (▶ RESUME HERE) → `docs/planning/Planning.md` §5.
-- App-lock PIN (argon2 hashing)
-- Complete i18n en/hi wiring
+**Sprint 2 (complete):** ✅ `0002_family.sql` applied to prod · ✅ Email-OTP login + auth middleware · ✅ RLS isolation test suite (M0 gate) + `app_lock_hash` boundary assertions · ✅ App-lock PIN (argon2, server-verify, rate-limited) · ✅ i18n locale switching (`LocaleProvider` + `updateUserLocale`).
+**Sprint 3 (complete):** ✅ `AppShell` + `MainNav` (mobile tabs / desktop rail, iOS safe-area) · ✅ `EmptyState` + Home family view · ✅ Full member CRUD (`createMember` / `updateMember` / `deleteMember`) · ✅ Shared `MemberForm` + `DeleteMemberButton` (AlertDialog) · ✅ `/members/new`, `/members/[id]`, `/members/[id]/edit` pages · ✅ 44 new i18n keys (en + hi).
+**▶ Next session — Sprint 4 (E3.S3.1):** `CaptureSheet` (camera/gallery/PDF picker), private `documents` Supabase Storage bucket + storage RLS policies, migration `0004_health_records.sql` (`health_record` table + pgmq extension), `POST /api/ingest` route handler → insert `health_record(pending)` + enqueue pgmq job, signed-URL document viewer. Gate: direct URL without auth → 403. Read order: this file → `docs/progress.md` (▶ RESUME HERE) → `docs/planning/Planning.md` §5 (Sprint 4).
 
 **M1 exit gate:** Upload a 3-page PDF → stores securely, lists, opens via signed URL. Direct URL without auth → 403. Manual entry → structured record on timeline. Demo: "add family, upload a report, see it stored securely."
 

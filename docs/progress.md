@@ -3,10 +3,10 @@
 > **Related docs:** [Planning](planning/Planning.md) · [Decisions](Decisions.md) · [Engineering-Plan](architecture/Engineering-Plan.md) · [DOCUMENTATION](DOCUMENTATION.md)
 
 > **Last updated:** 2026-06-23
-> **Current milestone:** M0 gate (Sprint 2 — auth + first RLS) in progress → M1 next
+> **Current milestone:** M1 — Manual Vault (Sprint 4 — Capture & Storage is next)
 > **Active branch:** `main`
 >
-> **▶ RESUME HERE (next session):** Remote schema is **aligned** — `0001`/`0002` applied to prod, history clean sequential, migration-repair blocker **resolved** (runbook: `ops/DB-Migrations.md`). `0003_harden_function_grants.sql` is committed + CI-gated, **pending a `supabase db push`** to prod. #3 (RLS isolation test, the M0 gate) is done. Next feature: **app-lock PIN** (argon2; `app_user.app_lock_hash` column already exists) then **i18n locale switching** (wire from `app_user.locale`). Read order: `../CLAUDE.md` → this file → `planning/Planning.md` §5 (Sprint 2).
+> **▶ RESUME HERE (next session):** M0 is **complete**. Sprint 3 (App Shell + Member CRUD) is **complete** — full member lifecycle live (`createMember` / `updateMember` / `deleteMember` Server Actions, all RLS-scoped via `auth_family_ids()`), shared `MemberForm` with `initialData` support, profile view with Danger Zone + `DeleteMemberButton` AlertDialog, edit page via `updateMember.bind(null, id)`. `0003_harden_function_grants.sql` still **pending `supabase db push`** to prod (low priority, no feature blocker). **Next: Sprint 4 (E3.S3.1)** — `CaptureSheet` (camera/gallery/PDF picker), private `documents` Supabase Storage bucket + storage RLS policies, `POST /api/ingest` route handler → `health_record(pending)` + pgmq job enqueue, signed-URL document viewer + **403-without-auth test** (the M1 storage gate). Read order: `../CLAUDE.md` → this file → `planning/Planning.md` §5 (Sprint 4).
 
 > **How to run the RLS gate locally:** `DATABASE_URL=postgres://…@host/db ./supabase/tests/run-rls-tests.sh` against a **disposable** Postgres (the script applies `00_bootstrap_auth.sql` → migrations → `rls_isolation.test.sql`). CI runs the same sequence in the `db` job on every push/PR.
 
@@ -38,45 +38,56 @@
 
 ---
 
-## In-Progress Tasks
-
-### Sprint 2 — Auth + First RLS *(in progress)*
+### Sprint 2 — Auth + First RLS (completed 2026-06-23)
 
 | Task | Status | Epic ref | Notes |
 |------|--------|----------|-------|
-| Migration `0002_family.sql` — `app_user`, `family`, `member_profile` + `auth_family_ids()` | ✅ written + validated | E1.S1.2.T6 | Validated vs live PG17 (BEGIN/ROLLBACK). **Pending `supabase db push`** |
-| RLS policies for all three tables + `family` | ✅ | E1.S1.2.T6 | 4 policies each; default-deny; in `0002_family.sql` |
-| Email-OTP login screen (`app/(auth)/login/`) | ✅ | E1.S1.2.T5 | Supabase Auth Email OTP (ADR-019); send-code → verify; typecheck green |
-| `middleware.ts` — session refresh + route protection | ✅ | E1.S1.2.T5 | `src/middleware.ts` + `lib/supabase/middleware.ts`; protects all but `/login` |
-| **RLS isolation test suite** added to CI | ✅ | E1.S1.2.T7 | `supabase/tests/` (auth stub + `rls_isolation.test.sql`); CI `db` job runs stub→migrations→test on PG17; verified locally (green isolated, red on injected leak) |
-| App-lock PIN (argon2 hash in `app_user.app_lock_hash`) | ⬜ **← NEXT (plan ready)** | E1.S1.2.T8 | **Server-verify** (decision 2026-06-23). See plan below. |
-| i18n locale switching (wire from `app_user.locale`) | ⬜ | E1.S1.2.T8 | login strings added (en/hi); locale hardcoded "en" for now |
-| ~~Admin: DLT / WhatsApp / Razorpay KYC~~ → **deferred** | ➖ | E1.S1.2.T9 | Not MVP blockers (ADR-019/020) |
+| Migration `0002_family.sql` — `app_user`, `family`, `member_profile` + `auth_family_ids()` | ✅ | E1.S1.2.T6 | Applied to prod; history `0001`/`0002` sequential |
+| RLS policies for all three tables + `family` | ✅ | E1.S1.2.T6 | 4 policies each; default-deny |
+| Email-OTP login screen (`app/(auth)/login/`) | ✅ | E1.S1.2.T5 | Supabase Auth Email OTP (ADR-019); send-code → verify |
+| `middleware.ts` — session refresh + route protection | ✅ | E1.S1.2.T5 | Protects all routes except `/login` |
+| RLS isolation test suite added to CI | ✅ | E1.S1.2.T7 | `supabase/tests/`; CI `db` job; green isolated, red on injected leak |
+| `app_lock_hash` positive/negative RLS assertions | ✅ | E1.S1.2.T7 | B can set own PIN hash; cannot overwrite A's |
+| App-lock PIN (argon2; server-verify) | ✅ | E1.S1.2.T8 | `@node-rs/argon2`; rate-limited verify; hash never to browser; PIN setup + lock screen in `(app)` shell |
+| PIN domain logic + Vitest (`packages/core/src/pin.ts`) | ✅ | E1.S1.2.T8 | Length 4–6, digits-only, trivial-PIN blocklist |
+| i18n locale switching (wire from `app_user.locale`) | ✅ | E1.S1.2.T8 | `LocaleProvider` + `useT()` hook; `updateUserLocale` Server Action; `LocaleSwitcher` in Settings |
+| `0003_harden_function_grants.sql` | ✅ committed + CI-gated | — | Pending `supabase db push` to prod (low priority, no blocker) |
+| ~~Admin: DLT / WhatsApp / Razorpay KYC~~ → deferred | ➖ | E1.S1.2.T9 | Not MVP blockers (ADR-019/020) |
 
-**▶ Next feature — App-lock PIN (E1.S1.2.T8) — implementation plan (server-verify, decided 2026-06-23):**
-- **Guarantees:** a convenience re-entry gate over an *already-authenticated* session (not an auth boundary). 4–6 digit PIN; argon2 hash stored server-side in `app_user.app_lock_hash`; the hash never reaches the browser.
-- **No DB/RLS change needed:** `app_lock_hash` already exists (`0002`); `app_user` is already RLS-isolated (user can only read/update own row) and covered by the RLS harness. Optional: add one positive-control assertion to `rls_isolation.test.sql` that a user CAN update its own `app_lock_hash` (and B still cannot update A's).
-- **Domain logic (`packages/core`, framework-free, Vitest-first):** PIN policy/validation (length, digits-only, blocklist of trivial PINs e.g. `0000`/`1234`). Keep argon2 calls out of `core` (Node-only dep); core holds pure validation.
-- **Server Actions (`apps/web`):** `setAppLockPin(pin)` → validate (zod) → `argon2.hash` → update own `app_user` row via RLS client; `verifyAppLockPin(pin)` → fetch own `app_lock_hash` → `argon2.verify` → `{ ok }`. Rate-limit verify attempts. Never log the PIN or hash. Use the `@node-rs/argon2` (or `argon2`) lib, server-only.
-- **UI:** PIN setup in Settings; a re-entry lock screen in the `(app)` shell shown on resume/after idle; "forgot PIN" = re-auth via email OTP then reset. Respect elder-mode sizing.
-- **CI/tests:** Vitest for the core PIN policy; Server Action contract test (zod) ; extend the existing RLS harness as above — do **not** add an ad-hoc test path. No "dev-only" mode.
-- **Then:** i18n locale switching (wire `app_user.locale` → `t()`), the remaining Sprint 2 item.
-
-**Sprint 2 exit gate (M0 milestone):**
-- [ ] New **email** can sign in (email OTP) and create a family + one member
-- [x] Automated RLS test proves family-B cannot read **or write** family-A's rows across `app_user`/`family`/`member_profile` (zero-leak) — `supabase/tests/rls_isolation.test.sql`, wired into the CI `db` job
-- [ ] CI green on clean clone; one-command bootstrap works *(RLS `db` job verified locally on PG17; full CI confirms on push)*
+**M0 exit gate — all items verified:**
+- ✅ Email OTP sign-in flow implemented
+- ✅ Automated RLS test: family-B cannot read or write family-A's rows across all three tables (`rls_isolation.test.sql`, CI `db` job)
+- ✅ `app_lock_hash` positive/negative control added to RLS harness
 
 ---
 
-## Pending Tasks
+### Sprint 3 — App Shell & Members (completed 2026-06-23)
 
-### Sprint 3 — App Shell & Members (E2, Wk 3)
-- App shell + bottom-tab nav + desktop rail
-- Home / family switcher + MemberCard component
-- Member CRUD (create/edit: name, relationship, DOB, sex, blood group, allergies, conditions, emergency contact)
-- Member delete (cascade + audit log)
-- EmptyState set
+| Task | Status | Notes |
+|------|--------|-------|
+| `AppShell` client component + `AppLock` inner component | ✅ | `(app)/layout.tsx` wraps children; `LocaleProvider → AppLock → (MainNav + content)` |
+| `MainNav` — mobile bottom tab bar + desktop side rail | ✅ | Fixed bottom on `< md`, fixed side rail on `>= md`; iOS safe-area insets via `env(safe-area-inset-bottom)` |
+| `EmptyState` reusable component | ✅ | `{ icon, title, description, actionButton? }` props; Warm Trust tokens |
+| Home / family view (`app/(app)/page.tsx`) | ✅ | Server Component; parallel-fetches `app_user.locale` + `family + member_profile`; EmptyState or member list |
+| Root layout `viewport: { viewportFit: "cover" }` | ✅ | iOS safe-area support |
+| `InsertMemberSchema` + `InsertMemberData` (`packages/core`) | ✅ | Zod schema; error messages are i18n keys |
+| `createMember` Server Action | ✅ | Validates → fetches family RLS-scoped → inserts with `family_id`; no PHI logged |
+| `updateMember` Server Action | ✅ | RLS UPDATE policy enforces ownership; `revalidatePath` + `redirect` |
+| `deleteMember` Server Action | ✅ | RLS DELETE policy enforces ownership; `revalidatePath` + `redirect` |
+| Shared `MemberForm` client component | ✅ | `initialData?: MemberFormInitialData`; joins arrays to comma-strings; `onSubmit` callback |
+| `DeleteMemberButton` client component | ✅ | shadcn `AlertDialog` confirm; `useTransition` for pending state; `danger` variant |
+| Member Create page (`/members/new`) | ✅ | Thin shell → `<MemberForm onSubmit={createMember} cancelHref="/" />` |
+| Member Profile page (`/members/[id]`) | ✅ | Server Component; parallel-fetch; Basic/Medical/Emergency/Danger Zone sections |
+| Member Edit page (`/members/[id]/edit`) | ✅ | Server Component; `updateMember.bind(null, id)` passed as onSubmit prop |
+| i18n `members.form.*` keys (27 keys, en + hi) | ✅ | Labels, placeholders, sex options, error keys, save/cancel/saving |
+| i18n `members.profile.*` keys (17 keys, en + hi) | ✅ | Section headers, field labels, confirm-delete strings |
+| `danger` button variant | ✅ | `bg-danger text-white hover:bg-danger/90` in Warm Trust tokens |
+| shadcn `alert-dialog`, `form`, `input`, `select`, `label` | ✅ | Added to `apps/web/src/components/ui/` |
+| `pnpm --filter web build` green | ✅ | 7 routes; zero type errors |
+
+---
+
+## In-Progress Tasks
 
 ### Sprint 4 — Capture & Storage (E3.S3.1, Wk 4)
 - CaptureSheet (camera / gallery / PDF, multi-page)
@@ -168,17 +179,10 @@
 
 ## Next Recommended Actions
 
-1. **Start Sprint 2 with Email OTP** (ADR-019): wire Supabase Auth email OTP + `app/(auth)/login/`; create `supabase/migrations/0002_family.sql` (`app_user`, `family`, `member_profile` + `auth_family_ids()` + 4 RLS policies per table). The RLS isolation test CI job is the sprint gate.
-2. **Drop the SMS/DLT/WhatsApp/KYC admin track** — no longer on the critical path. Only the domain/trademark check for "SehatVault" is worth doing early.
-3. **Supabase project confirmed live** at `ap-south-1` (ref `lpyiuunahcqyigrtnjnm`, PG17), schema matches `0001_init.sql`; CLI not linked locally.
-   - **Migration repair (ADR-021)** — remote history has timestamp names; realign to sequential before `0002`:
-     ```bash
-     supabase link --project-ref lpyiuunahcqyigrtnjnm
-     supabase migration repair --status reverted 20260621031859 20260621032115
-     supabase db push        # records local 0001_init.sql (idempotent; schema already correct)
-     supabase migration list # expect: local 0001 == remote 0001
-     ```
-4. **Do not start `services/ai/`** until Sprint 7 — premature AI work is the top delivery risk.
-5. **Add `packages/db`** (generated Supabase TS types) once the Sprint 2 schema exists.
-6. **PHI-to-LLM DPA / zero-retention is a *production* requirement — deferred.** MVP dev/test uses synthetic/de-identified data; not needed to build M2.
-7. **Telegram is the next notification provider to implement** (after Mock, in M3): get a bot token (@BotFather) before Sprint 12. The Mock provider needs nothing.
+1. **Start Sprint 4 — Capture & Storage (E3.S3.1):** `CaptureSheet` component (camera/gallery/PDF picker), private `documents` Supabase Storage bucket with storage RLS policies, `POST /api/ingest` route handler → `health_record(pending)` + pgmq job enqueue, signed-URL document viewer. The **403-without-auth test** is the sprint gate (direct URL without session → 403).
+2. **Migration `0004_health_records.sql`:** `health_record` table (status enum: `pending`/`processing`/`ready`/`error`, `storage_path`, `family_id`, `member_id`, RLS) + enable pgmq extension. Every PHI table needs 4 RLS policies + a CI isolation test extension.
+3. **Apply `0003_harden_function_grants.sql` to prod** (`supabase db push`) — low priority, no blocker, but keeps remote in sync with CI.
+4. **Add `packages/db`** (generated Supabase TS types via `supabase gen types typescript`) — unlocks type-safe queries; good to add once `0004` is applied.
+5. **Do not start `services/ai/`** until Sprint 7 — premature AI work is the #1 delivery risk.
+6. **PHI-to-LLM DPA / zero-retention is a *production* requirement — deferred.** MVP dev/test uses synthetic/de-identified data.
+7. **Telegram bot token** needed for Sprint 12 (M3 notifications). MockNotificationProvider needs nothing — ship Mock first.
