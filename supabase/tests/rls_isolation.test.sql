@@ -186,6 +186,22 @@ begin
   perform public.assert_rls(n = 1, 'A''s family name must be unchanged after B''s attacks');
 end$$;
 
+-- Function-grant hardening (migration 0003): the SECURITY DEFINER helpers must not be
+-- needlessly callable via the PostgREST RPC surface. handle_new_user is trigger-only;
+-- auth_family_ids is RLS-only and must stay executable by authenticated but not anon.
+do $$
+begin
+  perform public.assert_rls(not has_function_privilege('anon', 'public.handle_new_user()', 'execute'),
+                            'anon must NOT execute handle_new_user (0003 hardening)');
+  perform public.assert_rls(not has_function_privilege('authenticated', 'public.handle_new_user()', 'execute'),
+                            'authenticated must NOT execute handle_new_user (0003 hardening)');
+  perform public.assert_rls(not has_function_privilege('anon', 'public.auth_family_ids()', 'execute'),
+                            'anon must NOT execute auth_family_ids (0003 hardening)');
+  perform public.assert_rls(has_function_privilege('authenticated', 'public.auth_family_ids()', 'execute'),
+                            'authenticated MUST execute auth_family_ids (RLS depends on it)');
+end$$;
+
 \echo '✓ RLS isolation: family-B cannot read or write family-A across app_user/family/member_profile'
+\echo '✓ function-grant hardening (0003): RPC surface locked down on SECURITY DEFINER helpers'
 
 rollback;

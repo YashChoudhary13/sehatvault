@@ -61,3 +61,8 @@ alter default privileges in schema public
   grant select, insert, update, delete on tables to anon, authenticated, service_role;
 alter default privileges in schema public
   grant usage, select on sequences to anon, authenticated, service_role;
+-- Supabase ALSO grants EXECUTE on new public functions directly to anon/authenticated (not
+-- merely via PUBLIC). Mirror that so migration 0003's function-grant hardening is exercised
+-- faithfully in CI — otherwise a regression that drops the revoke would pass unnoticed.
+alter default privileges in schema public
+  grant execute on functions to anon, authenticated, service_role;
