@@ -1,10 +1,9 @@
 "use server";
 
-import { redirect } from "next/navigation";
-import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "../../lib/supabase/server";
 import { InsertRecordSchema } from "@sehatvault/core";
 import {
+  finalizeRecordMutation,
   type CreateRecordData,
   type RecordActionResult,
 } from "./record";
@@ -42,7 +41,6 @@ export async function updateRecord(
 
   if (dbError) return { error: dbError.message };
 
-  revalidatePath("/records");
-  revalidatePath(`/records/${id}`);
-  redirect(`/records/${id}`);
+  await finalizeRecordMutation(["/records", `/records/${id}`], `/records/${id}`);
+  return null;
 }

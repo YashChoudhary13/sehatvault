@@ -64,7 +64,7 @@ export function RecordForm({
     initialData?.type ?? "prescription",
   );
   const [recordDate, setRecordDate] = useState(
-    initialData?.record_date ?? defaultDate,
+    initialData ? (initialData.record_date ?? "") : defaultDate,
   );
   const [title, setTitle] = useState(initialData?.title ?? "");
   const [facility, setFacility] = useState(initialData?.facility ?? "");

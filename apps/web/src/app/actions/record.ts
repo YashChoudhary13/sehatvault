@@ -2,12 +2,46 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "../../lib/supabase/server";
 import { InsertRecordSchema, type InsertRecordData } from "@sehatvault/core";
 
 export type CreateRecordData = InsertRecordData;
 export type RecordActionResult = { error: string } | null;
 export type DeleteRecordResult = { error: string } | { success: true };
+
+const recordActionRuntime: {
+  revalidatePath: (path: string) => void;
+  redirect: (path: string) => never;
+} = {
+  revalidatePath,
+  redirect,
+};
+
+export async function __setRecordActionRuntimeForTests(overrides: {
+  revalidatePath?: (path: string) => void;
+  redirect?: (path: string) => never;
+}) {
+  if (overrides.revalidatePath) {
+    recordActionRuntime.revalidatePath = overrides.revalidatePath;
+  }
+
+  if (overrides.redirect) {
+    recordActionRuntime.redirect = overrides.redirect;
+  }
+}
+
+export async function finalizeRecordMutation(
+  revalidatePaths: string[],
+  redirectTo?: string,
+) {
+  for (const path of revalidatePaths) {
+    recordActionRuntime.revalidatePath(path);
+  }
+
+  if (redirectTo) {
+    recordActionRuntime.redirect(redirectTo);
+  }
+}
 
 export async function createRecord(
   data: CreateRecordData,
@@ -43,8 +77,8 @@ export async function createRecord(
 
   if (dbError) return { error: dbError.message };
 
-  revalidatePath("/records");
-  redirect("/records");
+  await finalizeRecordMutation(["/records"], "/records");
+  return null;
 }
 
 export async function deleteRecord(id: string): Promise<DeleteRecordResult> {
@@ -76,6 +110,6 @@ export async function deleteRecord(id: string): Promise<DeleteRecordResult> {
 
   if (dbError) return { error: dbError.message };
 
-  revalidatePath("/records");
+  await finalizeRecordMutation(["/records"]);
   return { success: true };
 }

@@ -1,15 +1,21 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { randomUUID } from "crypto";
-import { createClient } from "@/lib/supabase/server";
+import { z } from "zod";
+import { createClient } from "../../../lib/supabase/server";
 
-const ALLOWED_TYPES = new Set([
+const ALLOWED_MIME_TYPES = [
   "image/jpeg",
   "image/png",
   "image/webp",
   "image/heic",
   "application/pdf",
-]);
+ ] as const;
+
+const ALLOWED_TYPES = new Set<string>(ALLOWED_MIME_TYPES);
+
 const MAX_BYTES = 52_428_800; // 50 MiB
+
+const MemberIdSchema = z.string().uuid();
 
 /**
  * POST /api/ingest
@@ -73,7 +79,8 @@ export async function POST(req: NextRequest) {
       { status: 413 }
     );
   }
-  if (typeof memberIdEntry !== "string" || !memberIdEntry) {
+  const memberId = MemberIdSchema.safeParse(memberIdEntry);
+  if (!memberId.success) {
     return NextResponse.json(
       { error: { code: "BAD_REQUEST", message: "member_id is required", details: null } },
       { status: 400 }
@@ -84,7 +91,7 @@ export async function POST(req: NextRequest) {
   const { data: member } = await supabase
     .from("member_profile")
     .select("id")
-    .eq("id", memberIdEntry)
+    .eq("id", memberId.data)
     .single();
 
   if (!member) {
@@ -105,7 +112,7 @@ export async function POST(req: NextRequest) {
     .upload(fileKey, bytes, { contentType: fileEntry.type, upsert: false });
 
   if (storageError) {
-    console.error("[ingest] storage upload failed", storageError.message);
+    console.error("[ingest] storage upload failed");
     return NextResponse.json(
       { error: { code: "INTERNAL_SERVER_ERROR", message: "Storage upload failed", details: null } },
       { status: 500 }
@@ -118,7 +125,7 @@ export async function POST(req: NextRequest) {
     .insert([
       {
         family_id: family.id,
-        member_id: memberIdEntry,
+        member_id: memberId.data,
         file_object_key: fileKey,
         source: "upload",
         ocr_status: "pending", // initial state before processing
@@ -129,7 +136,7 @@ export async function POST(req: NextRequest) {
     .single();
 
   if (dbError ?? !insertedRecord) {
-    console.error("[ingest] db insert failed", dbError?.message);
+    console.error("[ingest] db insert failed");
     // Best-effort cleanup — ignore secondary errors.
     await supabase.storage.from("documents").remove([fileKey]);
     return NextResponse.json(
@@ -149,12 +156,12 @@ export async function POST(req: NextRequest) {
     });
 
     if (rpcError) {
-      console.warn("[ingest] RPC enqueue failed, falling back to status-only:", rpcError.message);
+      console.warn("[ingest] RPC enqueue failed, falling back to status-only");
       // Fallback: we already set status to 'pending'. In a real system, we might want to
       // ensure the worker polls the table. For now, we log and continue.
     }
-  } catch (err) {
-    console.error("[ingest] enqueue error", err);
+  } catch {
+    console.error("[ingest] enqueue error");
     // Continue — the record is saved with status 'pending'.
   }
 
