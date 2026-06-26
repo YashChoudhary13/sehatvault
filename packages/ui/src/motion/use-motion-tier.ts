@@ -10,10 +10,10 @@ const DURATION_S: Record<MotionTier, number> = { calm: 0.2, standard: 0.36, expr
 export interface MotionSpec {
   initial: Record<string, number>;
   animate: Record<string, number>;
-  transition: { duration: number; ease: number[] };
+  transition: { duration: number; ease: [number, number, number, number] };
 }
 
-const EASE_OUT = [0.23, 1, 0.32, 1];
+const EASE_OUT: [number, number, number, number] = [0.23, 1, 0.32, 1];
 
 export function resolveMotion(tier: MotionTier, reduced: boolean): MotionSpec {
   if (reduced) {
