@@ -66,3 +66,46 @@ alter default privileges in schema public
 -- faithfully in CI — otherwise a regression that drops the revoke would pass unnoticed.
 alter default privileges in schema public
   grant execute on functions to anon, authenticated, service_role;
+
+-- ── Minimal Supabase Storage stub (TEST/CI ONLY) ─────────────────────────────────────────
+-- Migration 0004 inserts into storage.buckets and creates policies on storage.objects.
+-- These don't exist in vanilla Postgres; this stub recreates the minimum surface needed.
+create schema if not exists storage;
+
+create table if not exists storage.buckets (
+  id                 text primary key,
+  name               text not null,
+  public             boolean not null default false,
+  file_size_limit    bigint,
+  allowed_mime_types text[]
+);
+
+create table if not exists storage.objects (
+  id         uuid primary key default gen_random_uuid(),
+  bucket_id  text references storage.buckets(id) on delete cascade,
+  name       text,
+  owner      uuid,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now(),
+  metadata   jsonb
+);
+
+alter table storage.objects enable row level security;
+
+-- storage.foldername: returns all path segments except the last (filename).
+-- 'family_id/member_id/record_id/file.pdf' → '{family_id,member_id,record_id}'
+create or replace function storage.foldername(name text)
+returns text[]
+language plpgsql
+as $$
+declare
+  _parts text[];
+begin
+  select string_to_array(name, '/') into _parts;
+  return _parts[1 : array_length(_parts, 1) - 1];
+end;
+$$;
+
+grant usage on schema storage to anon, authenticated, service_role;
+grant select, insert, update, delete on storage.buckets to anon, authenticated, service_role;
+grant select, insert, update, delete on storage.objects to anon, authenticated, service_role;

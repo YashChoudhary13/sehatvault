@@ -44,6 +44,13 @@ insert into member_profile (family_id, display_name)
 insert into member_profile (family_id, display_name)
   values ((select id from family where owner_user_id = :'user_b'), 'Member B');
 
+-- Seed a health_record for family A so we can assert B cannot access it.
+insert into health_record (member_id, family_id, title, ocr_status)
+  select mp.id, mp.family_id, 'CBC Report A', 'pending'
+  from member_profile mp
+  join family f on f.id = mp.family_id
+  where f.owner_user_id = :'user_a';
+
 -- Stash A's ids in transaction-local GUCs so the impersonated blocks can target them
 -- by value (B can never discover them through the API). (\o silences set_config echo.)
 \o /dev/null
@@ -52,6 +59,14 @@ select set_config('test.member_a', (select mp.id::text
                                        from member_profile mp
                                        join family f on f.id = mp.family_id
                                       where f.owner_user_id = :'user_a'), true);
+select set_config('test.health_record_a', (select hr.id::text
+                                              from health_record hr
+                                              join family f on f.id = hr.family_id
+                                             where f.owner_user_id = :'user_a'), true);
+select set_config('test.member_b', (select mp.id::text
+                                       from member_profile mp
+                                       join family f on f.id = mp.family_id
+                                      where f.owner_user_id = :'user_b'), true);
 
 -- ── Impersonate family-B ────────────────────────────────────────────────────────────────
 select set_config('request.jwt.claims',
@@ -174,6 +189,73 @@ begin
   perform public.assert_rls(n = 0, 'B must not overwrite A''s app_lock_hash');
 end$$;
 
+-- ── health_record: READ isolation + positive controls ──────────────────────────────────
+do $$
+declare
+  fam_a uuid := current_setting('test.family_a')::uuid;
+  hr_a  uuid := current_setting('test.health_record_a')::uuid;
+  n int;
+begin
+  -- positive control: B sees exactly its own health_records (none seeded yet)
+  select count(*) into n from health_record;
+  perform public.assert_rls(n = 0, 'B should see 0 health_records (none in B''s family yet)');
+
+  -- read isolation: A's record is invisible to B
+  select count(*) into n from health_record where id = hr_a;
+  perform public.assert_rls(n = 0, 'B must not read A''s health_record');
+
+  select count(*) into n from health_record where family_id = fam_a;
+  perform public.assert_rls(n = 0, 'B must not read any health_record in A''s family');
+end$$;
+
+-- ── health_record: WRITE isolation (UPDATE / DELETE must touch 0 rows) ─────────────────
+do $$
+declare
+  hr_a uuid := current_setting('test.health_record_a')::uuid;
+  n    int;
+begin
+  update health_record set title = 'hijacked' where id = hr_a;
+  get diagnostics n = row_count;
+  perform public.assert_rls(n = 0, 'B UPDATE on A''s health_record must affect 0 rows');
+
+  delete from health_record where id = hr_a;
+  get diagnostics n = row_count;
+  perform public.assert_rls(n = 0, 'B DELETE on A''s health_record must affect 0 rows');
+end$$;
+
+-- ── health_record: INSERT forge must be blocked by RLS WITH CHECK ───────────────────────
+do $$
+declare
+  fam_a   uuid := current_setting('test.family_a')::uuid;
+  mem_a   uuid := current_setting('test.member_a')::uuid;
+  blocked boolean;
+  emsg    text;
+begin
+  blocked := false;
+  begin
+    insert into health_record (member_id, family_id, title)
+      values (mem_a, fam_a, 'injected');
+  exception when insufficient_privilege then
+    get stacked diagnostics emsg = message_text;
+    blocked := emsg ilike '%row-level security%';
+  end;
+  perform public.assert_rls(blocked, 'B INSERT into A''s family health_record must be blocked by RLS');
+end$$;
+
+-- ── health_record: positive write control — B CAN insert into its own family ───────────
+do $$
+declare
+  own_fam uuid;
+  mem_b   uuid := current_setting('test.member_b')::uuid;
+  n       int;
+begin
+  select id into own_fam from family;  -- RLS ⇒ only B's family is visible
+  insert into health_record (member_id, family_id, title, source)
+    values (mem_b, own_fam, 'B ECG Report', 'upload');
+  select count(*) into n from health_record;
+  perform public.assert_rls(n = 1, 'B should be able to insert a health_record into its own family');
+end$$;
+
 -- Default-deny: with no identity (no JWT), nothing is readable.
 \o /dev/null
 select set_config('request.jwt.claims', '', true);
@@ -185,6 +267,7 @@ begin
   select count(*) into n from family;         perform public.assert_rls(n = 0, 'no identity ⇒ 0 family rows (default deny)');
   select count(*) into n from member_profile; perform public.assert_rls(n = 0, 'no identity ⇒ 0 member rows (default deny)');
   select count(*) into n from app_user;       perform public.assert_rls(n = 0, 'no identity ⇒ 0 app_user rows (default deny)');
+  select count(*) into n from health_record;  perform public.assert_rls(n = 0, 'no identity ⇒ 0 health_record rows (default deny)');
 end$$;
 
 -- Back to the owner: confirm none of B's attempts mutated A's data.
@@ -199,6 +282,10 @@ begin
   select count(*) into n from family
    where id = current_setting('test.family_a')::uuid and name <> 'hijacked';
   perform public.assert_rls(n = 1, 'A''s family name must be unchanged after B''s attacks');
+
+  select count(*) into n from health_record
+   where family_id = current_setting('test.family_a')::uuid and title = 'CBC Report A';
+  perform public.assert_rls(n = 1, 'A''s health_record must be intact after B''s attacks');
 end$$;
 
 -- Function-grant hardening (migration 0003): the SECURITY DEFINER helpers must not be
@@ -217,6 +304,7 @@ begin
 end$$;
 
 \echo '✓ RLS isolation: family-B cannot read or write family-A across app_user/family/member_profile'
+\echo '✓ RLS isolation: family-B cannot read or write family-A''s health_record (0004)'
 \echo '✓ app_lock_hash: B can set own PIN hash; cannot overwrite A''s'
 \echo '✓ function-grant hardening (0003): RPC surface locked down on SECURITY DEFINER helpers'
 
