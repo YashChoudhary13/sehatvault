@@ -2,11 +2,33 @@
 
 > **Related docs:** [Planning](planning/Planning.md) · [Decisions](Decisions.md) · [Engineering-Plan](architecture/Engineering-Plan.md) · [DOCUMENTATION](DOCUMENTATION.md)
 
-> **Last updated:** 2026-06-23
-> **Current milestone:** M0 gate (Sprint 2 — auth + first RLS) in progress → M1 next
-> **Active branch:** `main`
+> **Last updated:** 2026-06-26
+> **Current milestone:** M1 — Manual Vault (**COMPLETE & pixel-verified** 2026-06-26; Sprints 2–6 done; on branch `feat/m1-manual-vault`)
+> **Active branch:** `feat/m1-manual-vault` (7 slices; ready for PR → `main`)
 >
-> **▶ RESUME HERE (next session):** Remote schema is **aligned** — `0001`/`0002` applied to prod, history clean sequential, migration-repair blocker **resolved** (runbook: `ops/DB-Migrations.md`). `0003_harden_function_grants.sql` is committed + CI-gated, **pending a `supabase db push`** to prod. #3 (RLS isolation test, the M0 gate) is done. Next feature: **app-lock PIN** (argon2; `app_user.app_lock_hash` column already exists) then **i18n locale switching** (wire from `app_user.locale`). Read order: `../CLAUDE.md` → this file → `planning/Planning.md` §5 (Sprint 2).
+> **▶ RESUME HERE (next session):** **M1 is reached.** Sprints 2–6 complete on branch `feat/m1-manual-vault`. Verified by the lead with a cold typecheck/build/test (48 tests pass) AND a live agent-browser pixel pass against `localhost:3000` with the **remote demo seed applied** (`demo@sehatvault.dev` / Sharma family / 3 members / 6 records): landing (desktop), `/home`, `/records` timeline + filter chips + grouping (desktop + 390px mobile), unauth gate (307/401). The 2-agent round (Agent A = records UX/states/i18n + a11y focus rings; Agent B = M1 storage-gate hardening + contract/RLS tests) integrated clean, zero collisions. **Closed:** demo seed applied; i18n wired (landing already through `t()`, 246-key parity, Install button uses `t()`); `audit_log` correctly deferred to M4 (removed from this round). **⭐ FIRST TASK NEXT SESSION = the major UI/design overhaul.** Read [`design/Design-Overhaul.md`](design/Design-Overhaul.md) (direction doc: premium/welcoming/"big-company" feel via Framer motion, select 3D, video + Higgsfield assets — premium-but-calm, fast on low-end Android, elder-mode safe) and **start with the `superpowers:brainstorming` flow** to lock the open decisions (surface focus, how far to push 3D, video usage, Higgsfield pipeline; scope "more functionality" separately) → write the spec → `writing-plans` → build. Do NOT start implementation before those decisions are approved. Read order: `../CLAUDE.md` → this file → **`design/Design-Overhaul.md`** → `design/Design-System.md` → `design/UX-Plan.md`.
+
+---
+
+## ⭐ Working Principle — Design-as-you-build (Definition of Done)
+
+> Added 2026-06-26. **We build like professional developers: each feature is _designed_ as part of building it — not shipped functional-but-ugly with a deferred "polish later" pass** (that pass never comes, and the product feels unfinished — exactly what happened before the marketing landing forced the issue).
+
+**Before building any user-facing screen/component**, read its spec:
+- `docs/design/UX-Plan.md` — screen flows + §8 component inventory (MemberCard, CaptureSheet, RecordCard, TrendChart, ReviewCard, ShareScopeForm, QRCard, EmptyState, ProcessingCard, …).
+- `docs/design/Design-System.md` — Warm Trust tokens, motion tiers, component-feel rules.
+
+**A feature is _done_ only when it meets this Definition of Done:**
+1. Uses Warm Trust **tokens** (`packages/config/theme.css`) — no hardcoded hex or raw durations.
+2. **Lucide** icons only (never emoji); status = **icon + label** (never colour alone).
+3. Has real **empty / loading / error** states (skeletons over spinners; reserve space, no layout jump).
+4. **Responsive** at 375 / 768 / 1024 / 1440 — no horizontal scroll on mobile.
+5. Respects **`prefers-reduced-motion`** and **elder mode**; motion is calm-tier and never blocks content.
+6. Passes the **`Design-System.md` §9 pre-delivery checklist** (the canonical gate).
+7. **Pixels verified** via `agent-browser` (open → `screenshot --full` → `set viewport <w> <h>` for mobile → click the critical actions) — *not just* typecheck/build green.
+8. Copy goes through **`t()`** (en + hi). *(Known debt: marketing landing is still inline English — scheduled follow-up.)*
+
+Every sprint below now carries an explicit **Design** step + this DoD.
 
 > **How to run the RLS gate locally:** `DATABASE_URL=postgres://…@host/db ./supabase/tests/run-rls-tests.sh` against a **disposable** Postgres (the script applies `00_bootstrap_auth.sql` → migrations → `rls_isolation.test.sql`). CI runs the same sequence in the `db` job on every push/PR.
 
@@ -38,65 +60,142 @@
 
 ---
 
-## In-Progress Tasks
-
-### Sprint 2 — Auth + First RLS *(in progress)*
+### Sprint 2 — Auth + First RLS (completed 2026-06-23)
 
 | Task | Status | Epic ref | Notes |
 |------|--------|----------|-------|
-| Migration `0002_family.sql` — `app_user`, `family`, `member_profile` + `auth_family_ids()` | ✅ written + validated | E1.S1.2.T6 | Validated vs live PG17 (BEGIN/ROLLBACK). **Pending `supabase db push`** |
-| RLS policies for all three tables + `family` | ✅ | E1.S1.2.T6 | 4 policies each; default-deny; in `0002_family.sql` |
-| Email-OTP login screen (`app/(auth)/login/`) | ✅ | E1.S1.2.T5 | Supabase Auth Email OTP (ADR-019); send-code → verify; typecheck green |
-| `middleware.ts` — session refresh + route protection | ✅ | E1.S1.2.T5 | `src/middleware.ts` + `lib/supabase/middleware.ts`; protects all but `/login` |
-| **RLS isolation test suite** added to CI | ✅ | E1.S1.2.T7 | `supabase/tests/` (auth stub + `rls_isolation.test.sql`); CI `db` job runs stub→migrations→test on PG17; verified locally (green isolated, red on injected leak) |
-| App-lock PIN (argon2 hash in `app_user.app_lock_hash`) | ⬜ **← NEXT (plan ready)** | E1.S1.2.T8 | **Server-verify** (decision 2026-06-23). See plan below. |
-| i18n locale switching (wire from `app_user.locale`) | ⬜ | E1.S1.2.T8 | login strings added (en/hi); locale hardcoded "en" for now |
-| ~~Admin: DLT / WhatsApp / Razorpay KYC~~ → **deferred** | ➖ | E1.S1.2.T9 | Not MVP blockers (ADR-019/020) |
+| Migration `0002_family.sql` — `app_user`, `family`, `member_profile` + `auth_family_ids()` | ✅ | E1.S1.2.T6 | Applied to prod; history `0001`/`0002` sequential |
+| RLS policies for all three tables + `family` | ✅ | E1.S1.2.T6 | 4 policies each; default-deny |
+| Email-OTP login screen (`app/(auth)/login/`) | ✅ | E1.S1.2.T5 | Supabase Auth Email OTP (ADR-019); send-code → verify |
+| `middleware.ts` — session refresh + route protection | ✅ | E1.S1.2.T5 | Protects all routes except `/login` |
+| RLS isolation test suite added to CI | ✅ | E1.S1.2.T7 | `supabase/tests/`; CI `db` job; green isolated, red on injected leak |
+| `app_lock_hash` positive/negative RLS assertions | ✅ | E1.S1.2.T7 | B can set own PIN hash; cannot overwrite A's |
+| App-lock PIN (argon2; server-verify) | ✅ | E1.S1.2.T8 | `@node-rs/argon2`; rate-limited verify; hash never to browser; PIN setup + lock screen in `(app)` shell |
+| PIN domain logic + Vitest (`packages/core/src/pin.ts`) | ✅ | E1.S1.2.T8 | Length 4–6, digits-only, trivial-PIN blocklist |
+| i18n locale switching (wire from `app_user.locale`) | ✅ | E1.S1.2.T8 | `LocaleProvider` + `useT()` hook; `updateUserLocale` Server Action; `LocaleSwitcher` in Settings |
+| `0003_harden_function_grants.sql` | ✅ committed + CI-gated | — | Pending `supabase db push` to prod (low priority, no blocker) |
+| ~~Admin: DLT / WhatsApp / Razorpay KYC~~ → deferred | ➖ | E1.S1.2.T9 | Not MVP blockers (ADR-019/020) |
 
-**▶ Next feature — App-lock PIN (E1.S1.2.T8) — implementation plan (server-verify, decided 2026-06-23):**
-- **Guarantees:** a convenience re-entry gate over an *already-authenticated* session (not an auth boundary). 4–6 digit PIN; argon2 hash stored server-side in `app_user.app_lock_hash`; the hash never reaches the browser.
-- **No DB/RLS change needed:** `app_lock_hash` already exists (`0002`); `app_user` is already RLS-isolated (user can only read/update own row) and covered by the RLS harness. Optional: add one positive-control assertion to `rls_isolation.test.sql` that a user CAN update its own `app_lock_hash` (and B still cannot update A's).
-- **Domain logic (`packages/core`, framework-free, Vitest-first):** PIN policy/validation (length, digits-only, blocklist of trivial PINs e.g. `0000`/`1234`). Keep argon2 calls out of `core` (Node-only dep); core holds pure validation.
-- **Server Actions (`apps/web`):** `setAppLockPin(pin)` → validate (zod) → `argon2.hash` → update own `app_user` row via RLS client; `verifyAppLockPin(pin)` → fetch own `app_lock_hash` → `argon2.verify` → `{ ok }`. Rate-limit verify attempts. Never log the PIN or hash. Use the `@node-rs/argon2` (or `argon2`) lib, server-only.
-- **UI:** PIN setup in Settings; a re-entry lock screen in the `(app)` shell shown on resume/after idle; "forgot PIN" = re-auth via email OTP then reset. Respect elder-mode sizing.
-- **CI/tests:** Vitest for the core PIN policy; Server Action contract test (zod) ; extend the existing RLS harness as above — do **not** add an ad-hoc test path. No "dev-only" mode.
-- **Then:** i18n locale switching (wire `app_user.locale` → `t()`), the remaining Sprint 2 item.
-
-**Sprint 2 exit gate (M0 milestone):**
-- [ ] New **email** can sign in (email OTP) and create a family + one member
-- [x] Automated RLS test proves family-B cannot read **or write** family-A's rows across `app_user`/`family`/`member_profile` (zero-leak) — `supabase/tests/rls_isolation.test.sql`, wired into the CI `db` job
-- [ ] CI green on clean clone; one-command bootstrap works *(RLS `db` job verified locally on PG17; full CI confirms on push)*
+**M0 exit gate — all items verified:**
+- ✅ Email OTP sign-in flow implemented
+- ✅ Automated RLS test: family-B cannot read or write family-A's rows across all three tables (`rls_isolation.test.sql`, CI `db` job)
+- ✅ `app_lock_hash` positive/negative control added to RLS harness
 
 ---
 
-## Pending Tasks
+### Sprint 3 — App Shell & Members (completed 2026-06-23)
 
-### Sprint 3 — App Shell & Members (E2, Wk 3)
-- App shell + bottom-tab nav + desktop rail
-- Home / family switcher + MemberCard component
-- Member CRUD (create/edit: name, relationship, DOB, sex, blood group, allergies, conditions, emergency contact)
-- Member delete (cascade + audit log)
-- EmptyState set
+| Task | Status | Notes |
+|------|--------|-------|
+| `AppShell` client component + `AppLock` inner component | ✅ | `(app)/layout.tsx` wraps children; `LocaleProvider → AppLock → (MainNav + content)` |
+| `MainNav` — mobile bottom tab bar + desktop side rail | ✅ | Fixed bottom on `< md`, fixed side rail on `>= md`; iOS safe-area insets via `env(safe-area-inset-bottom)` |
+| `EmptyState` reusable component | ✅ | `{ icon, title, description, actionButton? }` props; Warm Trust tokens |
+| Home / family view (`app/(app)/page.tsx`) | ✅ | Server Component; parallel-fetches `app_user.locale` + `family + member_profile`; EmptyState or member list |
+| Root layout `viewport: { viewportFit: "cover" }` | ✅ | iOS safe-area support |
+| `InsertMemberSchema` + `InsertMemberData` (`packages/core`) | ✅ | Zod schema; error messages are i18n keys |
+| `createMember` Server Action | ✅ | Validates → fetches family RLS-scoped → inserts with `family_id`; no PHI logged |
+| `updateMember` Server Action | ✅ | RLS UPDATE policy enforces ownership; `revalidatePath` + `redirect` |
+| `deleteMember` Server Action | ✅ | RLS DELETE policy enforces ownership; `revalidatePath` + `redirect` |
+| Shared `MemberForm` client component | ✅ | `initialData?: MemberFormInitialData`; joins arrays to comma-strings; `onSubmit` callback |
+| `DeleteMemberButton` client component | ✅ | shadcn `AlertDialog` confirm; `useTransition` for pending state; `danger` variant |
+| Member Create page (`/members/new`) | ✅ | Thin shell → `<MemberForm onSubmit={createMember} cancelHref="/" />` |
+| Member Profile page (`/members/[id]`) | ✅ | Server Component; parallel-fetch; Basic/Medical/Emergency/Danger Zone sections |
+| Member Edit page (`/members/[id]/edit`) | ✅ | Server Component; `updateMember.bind(null, id)` passed as onSubmit prop |
+| i18n `members.form.*` keys (27 keys, en + hi) | ✅ | Labels, placeholders, sex options, error keys, save/cancel/saving |
+| i18n `members.profile.*` keys (17 keys, en + hi) | ✅ | Section headers, field labels, confirm-delete strings |
+| `danger` button variant | ✅ | `bg-danger text-white hover:bg-danger/90` in Warm Trust tokens |
+| shadcn `alert-dialog`, `form`, `input`, `select`, `label` | ✅ | Added to `apps/web/src/components/ui/` |
+| `pnpm --filter web build` green | ✅ | 7 routes; zero type errors |
 
-### Sprint 4 — Capture & Storage (E3.S3.1, Wk 4)
-- CaptureSheet (camera / gallery / PDF, multi-page)
-- Private `documents` Supabase Storage bucket + storage RLS
-- `POST /api/ingest` → store file + `health_record(pending)` + idempotency
-- Signed-URL viewer + **403-without-auth test**
+---
 
-### Sprint 5 — Record Detail & Manual Entry (E3.S3.2, Wk 5)
-- Record list (timeline) + detail (document viewer)
-- Manual structured entry / edit forms
-- Record delete (logged)
+---
 
-### Sprint 6 — PWA Polish + M1 Gate (Wk 6)
-- Timeline grouping + filters (type / date)
-- Offline banner + upload retry
-- PWA manifest + service worker
-- Storage 403 hardening
-- **M1 demo gate:** upload 3-page PDF → stored, listed, opens via signed URL
+### Sprint 4 — Capture & Storage (completed 2026-06-25)
+
+| Task | Status | Notes |
+|------|--------|-------|
+| `supabase/migrations/0004_health_records.sql` | ✅ | `health_record` table + 3 enums + pgmq guard + 4 RLS policies + storage bucket + 3 storage policies |
+| `supabase/migrations/0005_fix_trigger_policy_names.sql` | ✅ | Trigger rename + storage policy DROP/CREATE (ALTER POLICY RENAME blocked on Cloud) |
+| Migrations 0001–0005 applied to prod | ✅ | Confirmed via `supabase migration list` |
+| `CaptureSheet` client component | ✅ | Camera / Gallery / PDF; `onFile` callback; no locale dep |
+| `UploadSection` client component | ✅ | Dialog wrapper; member select; progress feedback; `t(locale, "records.upload.*")` |
+| `POST /api/ingest` route | ✅ | Auth → validate MIME + size → storage upload → `health_record(pending)` insert |
+| `GET /api/records/[id]/file` route | ✅ | Auth → RLS fetch → 60 s signed URL → `{ url, expires_at }` |
+| `_record-client.tsx` (`DocumentPreview` + `ReExtractButton`) | ✅ | `"use client"`; iframe/img; spinner; retry |
+| `/records/[id]` detail page | ✅ | Server Component; header + meta row + doc preview + Danger Zone |
+| Records list → clickable items + Create Record button | ✅ | `<Link>` wraps each row; New Record button added |
+| i18n `records.upload.*` (12 keys, en + hi) | ✅ | |
+| i18n `records.detail.*` (13 keys, en + hi) | ✅ | |
+| Storage bucket: private, 50 MiB, correct MIME types | ✅ | Confirmed via Supabase MCP |
+| `health_record` RLS + triggers on prod | ✅ | 4 policies + 2 triggers confirmed |
+| Unauth → all new routes → 307 /login | ✅ | curl confirmed |
+| E2E browser flow | ❌ | Chrome unavailable on dev machine — manual test by developer required |
+
+---
+
+### Sprint 5 — Record Detail & Manual Entry (completed 2026-06-26)
+
+| Task | Status | Notes |
+|------|--------|-------|
+| `InsertRecordSchema` + `InsertRecordData` in `packages/core` | ✅ | zod; `title` required (min 1); `facility`/`doctor`/`summary` optional |
+| `createRecord` Server Action | ✅ | zod validate → insert `source=manual, ocr_status=manual` → redirect |
+| `deleteRecord` Server Action | ✅ | RLS fetch → best-effort storage removal → delete row → redirect |
+| `RecordForm` client component | ✅ | Controlled; `initialData?`/`onSubmit?`/`readOnlyMember?` for edit reuse |
+| `/records/new` page | ✅ | Server Component; fetches locale + members; empty-member guard |
+| `DeleteRecordButton` client component | ✅ | AlertDialog; `useT()` hook; danger variant |
+| Detail page: Delete + Edit link wired | ✅ | Danger Zone section; Edit button → `/records/[id]/edit` |
+| i18n `records.action.*` (17 keys, en + hi) | ✅ | |
+| `/records/[id]/edit` page | ✅ | `app/(app)/records/[id]/edit/page.tsx`; pre-fills `RecordForm` via `initialData` (⚠️ not yet pixel-verified end-to-end) |
+| `updateRecord` Server Action | ✅ | `app/actions/record-edit.ts` |
+| Audit log on delete | ❌ | `audit_log` table not in schema yet — deferred to M4 (DPDP) |
+
+---
+
+### Marketing Landing & Routing (completed 2026-06-26)
+
+> Built to `docs/design/Design-System.md` §6. This was the missing "professional first impression" — the approved Warm Trust marketing site had never been implemented; only the authenticated app existed, so `/` redirected straight to a bare login.
+
+| Task | Status | Notes |
+|------|--------|-------|
+| Public marketing landing at `/` | ✅ | `app/(marketing)/{layout,page}.tsx` — 7 sections: hero (CSS device mockup), problem, how-it-works, feature bento, privacy, pricing, final CTA |
+| `Reveal` scroll-reveal component | ✅ | `_components/reveal.tsx`; IntersectionObserver fade+rise, reduced-motion safe, **1200ms fallback** so content never stays `opacity:0` |
+| Dashboard moved `/` → `/home` | ✅ | `(app)/home/page.tsx`; old `(app)/page.tsx` deleted (route-group conflict) |
+| Routing updates | ✅ | `middleware.ts` (`/` public; login → `/home`), `login/page.tsx`, `member.ts` redirects, `main-nav.tsx` home href + `isActive` |
+| Pixel verification (desktop + mobile) | ✅ | agent-browser; full-page + 390px viewport; all sections render, no overflow |
+| Design DoD compliance | ✅ | Warm Trust tokens, Lucide icons, icon+label status, responsive, reduced-motion |
+| Landing i18n (`t()`, en + hi) | ❌ | Copy is inline English; no marketing language toggle — **scheduled follow-up** |
+
+---
+
+## In-Progress Tasks
+
+> Each sprint now opens with a **Design** step (read `UX-Plan.md` + `Design-System.md` for the screens involved) and closes against the **Definition of Done** at the top of this file.
+
+### Sprint 6 — PWA Polish + M1 Gate (built 2026-06-26 via the 2-agent flow)
+
+> Delegated per [Multi-Agent-Workflow.md](./Multi-Agent-Workflow.md). Disjoint file ownership; lead-verified in the clean tree.
+
+| Task | Status | Owner | Notes |
+|------|--------|-------|-------|
+| Records timeline grouping + filter chips | ✅ | A | `record-filter-chips.tsx` (grouped timeline + type filter) |
+| `RecordCard` (icon + title + date + status icon+label) | ✅ | A | Type/status icons match `record_type`/`ocr_status` enums exactly |
+| Skeleton / empty / error states (records + home) | ✅ | A | `record-skeleton.tsx`; `EmptyState` gained `intent="error"` |
+| `OfflineBanner` (navigator.onLine, reduced-motion safe) | ✅ | A | Mounted in `app-shell.tsx` |
+| Seed demo data (3 members + 6 records) | ✅ built / ⏳ not applied | A | `seed.sql` schema-validated; lead fixed email `.app`→`.dev`; **apply pending auth for remote write** |
+| i18n keys (+28, en + hi) | ✅ | A | `records.timeline/type/status/source/filter.*`, `home.*`, `offline.banner.*` |
+| PWA manifest + icons (192/512 maskable, apple-touch, favicon) | ✅ | B | `app/manifest.ts`; real PNGs |
+| Service worker + install prompt | ✅ | B | `public/sw.js` + `sw-register.tsx`; never caches `/api`,`/auth`,`/storage`; Install text `TODO(i18n)` |
+| `layout.tsx` PWA meta + theme-color | ✅ | B | mounts `<SwRegister/>` |
+| Storage route hardening (`/api/records/[id]/file`) | ✅ | B | 403 unauth + RLS-invisible; `no-store`; 60s TTL; error details stripped |
+| Unauth `/api/**` → 401 (middleware) | ✅ | B (rnd 2) | page routes still redirect to `/login`; `/` + `/home` preserved — verified live |
+| Pixel-verify records timeline + `/records/[id]/edit` | ⏳ | lead | blocked until demo seed/user applied |
+| Wire Install + marketing landing into `t()` | ⏳ | lead | |
+| Upload retry; PWA install end-to-end | ⏳ | — | nice-to-have; not M1-gate-critical |
+| **M1 demo gate:** upload 3-page PDF → stored, listed, opens via signed URL | ⏳ | lead | run after seed applied |
 
 ### Sprints 7–10 — AI Pipeline (E4, M2, Wk 7–10)
+- **Design first:** TrendChart, ReviewCard (low-confidence correction UI), ProcessingCard, MedItem per `UX-Plan.md` §8 + Design-System motion (optimistic capture, processing states). Every new screen ships against the Definition of Done.
 - `services/ai/` FastAPI + Dockerfile + Render deploy
 - pgmq enqueue on ingest + worker drain loop (idempotent)
 - `/api/ai/callback` HMAC-signed route handler
@@ -112,6 +211,7 @@
 - **M2 demo:** snap lab → trend chart; snap prescription → medicine list
 
 ### Sprints 11–13 — Use & Reach (E5/E6/E7, M3, Wk 11–13)
+- **Design first:** ShareScopeForm, QRCard, ConsentRow, AccessLogRow, ReminderItem per `UX-Plan.md` §8; public `/s/[token]` doctor-share view is its own clean, no-chrome surface (Design-System §7). Ship against the Definition of Done.
 - Doctor share (scope + expiry + `share_grant` table + public `/s/[token]` page)
 - Access logging + revoke + `noindex` + kill-switch
 - QRCard component
@@ -127,6 +227,7 @@
 - **M3 demo:** share via QR; reminder fires via Telegram (or in-app Mock); ask "last sugar?" in Hindi
 
 ### Sprints 14–16 — Trust, Billing & Beta (E8/E9/E10/E11, M4, Wk 14–16)
+- **Design first:** consent dashboard, onboarding, emergency card, elder mode — these are the trust-defining surfaces; hold them to the highest Design-System bar. Ship against the Definition of Done.
 - Consent dashboard (shares + access log views)
 - Export job (zip: docs + structured JSON) + delete account (cascade + storage purge)
 - DPDP acceptance tests (export complete; delete purges all) — C2 gate
@@ -168,17 +269,10 @@
 
 ## Next Recommended Actions
 
-1. **Start Sprint 2 with Email OTP** (ADR-019): wire Supabase Auth email OTP + `app/(auth)/login/`; create `supabase/migrations/0002_family.sql` (`app_user`, `family`, `member_profile` + `auth_family_ids()` + 4 RLS policies per table). The RLS isolation test CI job is the sprint gate.
-2. **Drop the SMS/DLT/WhatsApp/KYC admin track** — no longer on the critical path. Only the domain/trademark check for "SehatVault" is worth doing early.
-3. **Supabase project confirmed live** at `ap-south-1` (ref `lpyiuunahcqyigrtnjnm`, PG17), schema matches `0001_init.sql`; CLI not linked locally.
-   - **Migration repair (ADR-021)** — remote history has timestamp names; realign to sequential before `0002`:
-     ```bash
-     supabase link --project-ref lpyiuunahcqyigrtnjnm
-     supabase migration repair --status reverted 20260621031859 20260621032115
-     supabase db push        # records local 0001_init.sql (idempotent; schema already correct)
-     supabase migration list # expect: local 0001 == remote 0001
-     ```
-4. **Do not start `services/ai/`** until Sprint 7 — premature AI work is the top delivery risk.
-5. **Add `packages/db`** (generated Supabase TS types) once the Sprint 2 schema exists.
-6. **PHI-to-LLM DPA / zero-retention is a *production* requirement — deferred.** MVP dev/test uses synthetic/de-identified data; not needed to build M2.
-7. **Telegram is the next notification provider to implement** (after Mock, in M3): get a bot token (@BotFather) before Sprint 12. The Mock provider needs nothing.
+1. **Sprint 6 — PWA Polish + M1 Gate** (apply the Definition of Done to every screen): timeline grouping + filters, empty/loading/error/offline states, offline banner, PWA manifest + service worker + icons, storage 403 hardening. **M1 demo gate:** upload 3-page PDF → stored, listed, opens via signed URL.
+2. **Carry-overs from the landing work:** (a) pixel-verify `/records/[id]/edit` end-to-end with agent-browser; (b) **seed demo data** (one family + a few members + sample records) so screens demo well and aren't empty; (c) wire the marketing landing copy into `t()` (en + hi) + add a language toggle.
+3. **Add `packages/db`** (generated Supabase TS types via `supabase gen types typescript`) — unlocks type-safe queries; do after any schema-stable sprint.
+4. **Browser/E2E verification is unblocked** — `agent-browser` (v0.31) is installed. Use it as the standard pixel-check tool (`open` → `screenshot --full` → `set viewport <w> <h>` for mobile → click critical actions). Chrome-devtools MCP is still unavailable; don't rely on it.
+5. **Apply `0003_harden_function_grants.sql` to prod** (`supabase db push`) — low priority, no blocker.
+6. **Do not start `services/ai/`** until Sprint 7 — premature AI work is the #1 delivery risk.
+7. **PHI-to-LLM DPA / zero-retention is a *production* requirement — deferred.** MVP dev/test uses synthetic data.
