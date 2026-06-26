@@ -106,7 +106,7 @@ function PinLockScreen({ onUnlock, onForgot }: PinLockScreenProps) {
       <button
         type="button"
         onClick={onForgot}
-        className="text-sm text-muted underline"
+        className="cursor-pointer rounded text-sm text-muted underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
       >
         {translate("pin.lock.forgot")}
       </button>

@@ -55,7 +55,7 @@ export function MainNav() {
               key={href}
               href={href}
               className={cn(
-                "flex flex-1 flex-col items-center gap-1 py-3 text-xs font-medium transition-colors motion-reduce:transition-none",
+                "flex flex-1 flex-col items-center gap-1 py-3 text-xs font-medium transition-colors motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset",
                 active ? "text-primary" : "text-muted",
               )}
               aria-current={active ? "page" : undefined}
@@ -71,7 +71,7 @@ export function MainNav() {
           <Link
             href="/records"
             aria-label={translate("nav.add")}
-            className="flex h-14 w-14 -translate-y-3 items-center justify-center rounded-full bg-accent shadow-lg transition-transform duration-150 ease-[var(--ease-out)] active:scale-95 motion-reduce:transition-none motion-reduce:active:scale-100"
+            className="flex h-14 w-14 -translate-y-3 items-center justify-center rounded-full bg-accent shadow-lg transition-transform duration-150 ease-[var(--ease-out)] active:scale-95 motion-reduce:transition-none motion-reduce:active:scale-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
           >
             <Plus className="h-7 w-7 stroke-[2.5] text-ink" />
           </Link>
@@ -85,7 +85,7 @@ export function MainNav() {
               key={href}
               href={href}
               className={cn(
-                "flex flex-1 flex-col items-center gap-1 py-3 text-xs font-medium transition-colors motion-reduce:transition-none",
+                "flex flex-1 flex-col items-center gap-1 py-3 text-xs font-medium transition-colors motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset",
                 active ? "text-primary" : "text-muted",
               )}
               aria-current={active ? "page" : undefined}
@@ -113,7 +113,7 @@ export function MainNav() {
                 key={href}
                 href={href}
                 className={cn(
-                  "flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors motion-reduce:transition-none",
+                  "flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
                   active
                     ? "bg-primary/10 text-primary"
                     : "text-muted hover:bg-bg hover:text-ink",
@@ -130,7 +130,7 @@ export function MainNav() {
         <div className="border-t border-border p-3">
           <Link
             href="/records"
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-accent py-3 text-sm font-semibold text-ink transition-[transform,background-color] duration-150 ease-[var(--ease-out)] hover:brightness-95 active:scale-[0.97] motion-reduce:transition-none motion-reduce:active:scale-100"
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-accent py-3 text-sm font-semibold text-ink transition-[transform,background-color] duration-150 ease-[var(--ease-out)] hover:brightness-95 active:scale-[0.97] motion-reduce:transition-none motion-reduce:active:scale-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
           >
             <Plus className="h-4 w-4 stroke-[2.5]" />
             {translate("nav.add")}
