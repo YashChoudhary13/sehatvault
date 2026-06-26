@@ -213,42 +213,56 @@ Full ADR list: see `docs/Decisions.md` (canonical, ADR-001..021). Key decisions:
 
 ## Current Implementation Status
 
-**As of 2026-06-23 — M0 complete; Sprints 2 + 3 complete; Sprint 4 (Capture & Storage) is next.**
+**As of 2026-06-26 — M0 complete; M1 (Manual Vault) COMPLETE & pixel-verified; Sprints 2–6 done. On branch `feat/m1-manual-vault` (7 slices, ready for PR → `main`). Next: major UI/design overhaul + more functionality.**
+
+> **Routing note (2026-06-26):** `/` is now the **public marketing landing** (`app/(marketing)/`). The authenticated dashboard moved to **`/home`** (`app/(app)/home/page.tsx`); the old `(app)/page.tsx` was deleted (two route groups cannot both own `/`). Middleware makes `/` public, returns **401 JSON for unauthenticated `/api/**`** (page routes still redirect to `/login`), and sends post-login to `/home`.
+
+> **Sprint 6 + M1 gate (2026-06-26)** built via two parallel agents — see [`docs/Multi-Agent-Workflow.md`](docs/Multi-Agent-Workflow.md). Adds: records timeline + filter chips + `RecordCard`, skeleton/empty/error states, `OfflineBanner`, full PWA (manifest + icons + service worker), `/api/**` 401, M1 storage-gate hardening (`file` route fail-closed 403; UUID validation) + contract/RLS tests (48 pass). **Verified:** cold typecheck/build/test green + live agent-browser pixel pass with the remote demo seed (`demo@sehatvault.dev`, Sharma family, 3 members, 6 records) across landing/`/home`/`/records` (desktop + mobile). `audit_log` deferred to M4 (removed this round).
 
 ### What exists
 - ✅ Turborepo + pnpm 9 monorepo skeleton, Node 22, Tailwind v4
-- ✅ `apps/web`: Next.js 15 PWA with Warm-Trust themed UI
+- ✅ `apps/web`: Next.js 15 PWA with Warm-Trust themed UI — **build green**
+- ✅ **Public marketing landing** at `/` (`app/(marketing)/{layout,page}.tsx` + `_components/reveal.tsx`): hero w/ CSS device mockup, problem, how-it-works, feature bento, privacy, pricing, final CTA — Warm Trust tokens, Lucide icons, scroll-reveal (IntersectionObserver + reduced-motion + fallback safety net). Desktop + mobile verified via agent-browser. **Copy is inline English — not yet through `t()`/i18n (follow-up).**
 - ✅ `packages/config`: tsconfig.base, ESLint 9 flat config, Prettier, `theme.css` (Warm Trust design tokens)
-- ✅ `packages/core`: `appVersion()` + `isNonEmptyName()` + PIN validation (`validatePin()`) + `InsertMemberSchema` — Vitest green
-- ✅ `packages/i18n`: en/hi catalogs with `t()` helper; `auth.login.*`, `pin.*`, `nav.*`, `members.form.*`, `members.profile.*` keys
-- ✅ `supabase/migrations/0001_init.sql`: pgcrypto + `set_updated_at()` trigger
-- ✅ `supabase/migrations/0002_family.sql`: `app_user`/`family`/`member_profile` + `auth_family_ids()` + RLS — **applied to prod** (history `0001`/`0002` sequential)
-- ✅ `supabase/migrations/0003_harden_function_grants.sql`: function-grant hardening — committed + CI-gated, **pending `supabase db push`** to prod (runbook: `docs/ops/DB-Migrations.md`)
+- ✅ `packages/core`: `appVersion()` + `isNonEmptyName()` + `validatePin()` + `InsertMemberSchema` + `InsertRecordSchema` — Vitest green (19 tests)
+- ✅ `packages/i18n`: en/hi catalogs with `t()` helper; `auth.login.*`, `pin.*`, `nav.*`, `members.*`, `records.upload.*`, `records.detail.*`, `records.action.*` keys
+- ✅ `supabase/migrations/0001_init.sql` → `0005_fix_trigger_policy_names.sql` — **all applied to prod**
 - ✅ `supabase/config.toml` + `seed/seed.sql`
 - ✅ `.github/workflows/ci.yml`: lint + typecheck + unit tests + build + RLS isolation gate (PG17 ephemeral)
-- ✅ RLS isolation test suite: `supabase/tests/` — auth stub + `rls_isolation.test.sql` (family-B vs A, read + write, all tables + `app_lock_hash` boundary); `run-rls-tests.sh`
+- ✅ RLS isolation test suite: `supabase/tests/` — auth stub + `rls_isolation.test.sql`; `run-rls-tests.sh`
 - ✅ Sentry init stub + Supabase client factories + zod env validation + `.env.example`
 - ✅ Email-OTP login (`app/(auth)/login/`) + session middleware (`src/middleware.ts`)
-- ✅ App-lock PIN: `setAppLockPin` / `verifyAppLockPin` / `clearAppLockPin` Server Actions; `@node-rs/argon2` hash stored server-side in `app_user.app_lock_hash`; rate-limited; `PinSetup` in Settings; `AppLock` re-entry lock screen in `(app)` shell; hash never sent to browser
-- ✅ i18n locale switching: `LocaleProvider` + `useT()` hook; `updateUserLocale` Server Action; `LocaleSwitcher` in Settings; wired to `app_user.locale`
-- ✅ `AppShell` + `MainNav`: mobile bottom tab bar (`< md`) + desktop side rail (`>= md`); iOS safe-area via `env(safe-area-inset-bottom)`; `viewport: { viewportFit: "cover" }` in root layout
-- ✅ `EmptyState` component + Home / family view (Server Component; parallel-fetches locale + members)
-- ✅ Full member CRUD: `createMember` / `updateMember` / `deleteMember` Server Actions (RLS-scoped via `auth_family_ids()`; no PHI logged)
-- ✅ Shared `MemberForm` client component (`initialData?: MemberFormInitialData`; joins/splits arrays ↔ comma-strings)
-- ✅ `DeleteMemberButton`: shadcn `AlertDialog` confirm dialog; `useTransition`; `danger` button variant (Warm Trust token)
-- ✅ Member Create (`/members/new`), Profile (`/members/[id]`), Edit (`/members/[id]/edit`) pages — build green, 7 routes
-- ✅ shadcn primitives in `apps/web/src/components/ui/`: `alert-dialog`, `form`, `input`, `select`, `label`, `button` (+ `danger` variant)
+- ✅ App-lock PIN: `setAppLockPin` / `verifyAppLockPin` / `clearAppLockPin` Server Actions; argon2 hash server-side; rate-limited; `PinSetup` + `AppLock` screen
+- ✅ i18n locale switching: `LocaleProvider` + `useT()` hook; `updateUserLocale` Server Action; `LocaleSwitcher` in Settings
+- ✅ `AppShell` + `MainNav`: mobile bottom tab bar + desktop side rail; iOS safe-area
+- ✅ `EmptyState` component + Home / family view
+- ✅ Full member CRUD: `createMember` / `updateMember` / `deleteMember` Server Actions
+- ✅ Shared `MemberForm` + `DeleteMemberButton`; Member Create / Profile / Edit pages
+- ✅ shadcn primitives: `alert-dialog`, `form`, `input`, `select`, `label`, `button` (+ `danger` variant)
+- ✅ `health_record` table + 3 enums (`record_type`, `record_source`, `ocr_status`) + pgmq guard + 4 RLS policies + 2 triggers (migration 0004)
+- ✅ `documents` private storage bucket (50 MiB, MIME allowlist) + 3 storage RLS policies: `doc_read`/`doc_insert`/`doc_delete` (migration 0004 + 0005)
+- ✅ `CaptureSheet` + `UploadSection` client components (camera / gallery / PDF)
+- ✅ `POST /api/ingest`: auth → validate → storage upload → `health_record(pending)` insert
+- ✅ `GET /api/records/[id]/file`: auth → RLS fetch → 60 s signed URL → `{ url, expires_at }`
+- ✅ `DocumentPreview` + `ReExtractButton` client components (`_record-client.tsx`)
+- ✅ `/records/[id]` detail page: header + meta row + doc preview + Danger Zone (delete + edit link)
+- ✅ `/records` list page: clickable rows → detail; Create Record button
+- ✅ `createRecord` + `deleteRecord` Server Actions (`apps/web/src/app/actions/record.ts`)
+- ✅ `/records/new` page: manual record creation (member / type / date / title / facility / doctor / summary)
+- ✅ `RecordForm` client component: controlled; `initialData?` / `onSubmit?` props ready for edit reuse
+- ✅ `DeleteRecordButton` client component: AlertDialog; best-effort storage cleanup on delete
+- ✅ `/records/[id]/edit` page + `updateRecord` Server Action (`app/(app)/records/[id]/edit/page.tsx` + `app/actions/record-edit.ts`) — pre-fills `RecordForm` via `initialData` (⚠️ edit flow not yet pixel-verified end-to-end)
+- ✅ Authenticated dashboard at **`/home`** (`app/(app)/home/page.tsx`); nav, login redirect, and member actions all point to `/home`
 
 ### What does NOT exist yet
-- ❌ Document capture (`CaptureSheet` — camera/gallery/PDF) — **Sprint 4 next**
-- ❌ Supabase Storage private `documents` bucket + storage RLS policies — **Sprint 4 next**
-- ❌ `health_record` table + pgmq extension + `migration 0004` — **Sprint 4 next**
-- ❌ `POST /api/ingest` route handler + pgmq job enqueue — **Sprint 4 next**
-- ❌ Signed-URL document viewer + 403-without-auth test — **Sprint 4 gate**
+- ❌ Audit log on delete (`audit_log` table not in schema yet)
+- ❌ Marketing/landing i18n — landing copy is inline English; no `t()` keys or marketing language toggle yet
+- ❌ Public doctor-share view (`app/s/[token]/`) — Sprints 11–13
 - ❌ AI pipeline (`services/ai/` — entire directory) — Sprint 7
 - ❌ Doctor share, reminders, consent dashboard — Sprints 11–16
-- ❌ `packages/db` (generated Supabase types) — add after `0004` is applied
+- ❌ `packages/db` (generated Supabase types) — add after schema stabilises
 - ❌ `packages/ui` (promoted from `apps/web/components/ui` lazily)
+- ✅ **Browser/E2E verification unblocked** — `agent-browser` (v0.31) is installed; drive it to screenshot + click-test flows (`agent-browser open <url>` → `screenshot --full --screenshot-dir .` → `set viewport <w> <h>` for mobile). Chrome-devtools MCP still unavailable.
 
 ---
 
@@ -257,14 +271,17 @@ Full ADR list: see `docs/Decisions.md` (canonical, ADR-001..021). Key decisions:
 | Milestone | Status | Sprint(s) |
 |-----------|--------|-----------|
 | M0 — Foundations & guardrails | ✅ Done | 1–2 partial |
-| **M1 — Manual vault** | 🔄 Next | 2–6 |
+| **M1 — Manual vault** | 🔄 In progress (Sprints 2–5 done; Sprint 6 remains) | 2–6 |
 | M2 — AI auto-organise | ⏳ Planned | 7–10 |
 | M3 — Use & reach | ⏳ Planned | 11–13 |
 | M4 — Trust, billing & closed beta | ⏳ Planned | 14–16 |
 
-**Sprint 2 (complete):** ✅ `0002_family.sql` applied to prod · ✅ Email-OTP login + auth middleware · ✅ RLS isolation test suite (M0 gate) + `app_lock_hash` boundary assertions · ✅ App-lock PIN (argon2, server-verify, rate-limited) · ✅ i18n locale switching (`LocaleProvider` + `updateUserLocale`).
-**Sprint 3 (complete):** ✅ `AppShell` + `MainNav` (mobile tabs / desktop rail, iOS safe-area) · ✅ `EmptyState` + Home family view · ✅ Full member CRUD (`createMember` / `updateMember` / `deleteMember`) · ✅ Shared `MemberForm` + `DeleteMemberButton` (AlertDialog) · ✅ `/members/new`, `/members/[id]`, `/members/[id]/edit` pages · ✅ 44 new i18n keys (en + hi).
-**▶ Next session — Sprint 4 (E3.S3.1):** `CaptureSheet` (camera/gallery/PDF picker), private `documents` Supabase Storage bucket + storage RLS policies, migration `0004_health_records.sql` (`health_record` table + pgmq extension), `POST /api/ingest` route handler → insert `health_record(pending)` + enqueue pgmq job, signed-URL document viewer. Gate: direct URL without auth → 403. Read order: this file → `docs/progress.md` (▶ RESUME HERE) → `docs/planning/Planning.md` §5 (Sprint 4).
+**Sprint 2 (complete):** ✅ `0002_family.sql` applied to prod · ✅ Email-OTP login + auth middleware · ✅ RLS isolation test suite (M0 gate) · ✅ App-lock PIN (argon2, server-verify, rate-limited) · ✅ i18n locale switching.
+**Sprint 3 (complete):** ✅ `AppShell` + `MainNav` · ✅ `EmptyState` + Home family view · ✅ Full member CRUD · ✅ Shared `MemberForm` + `DeleteMemberButton` · ✅ `/members/new`, `/members/[id]`, `/members/[id]/edit` · ✅ 44 new i18n keys (en + hi).
+**Sprint 4 (complete 2026-06-25):** ✅ migrations 0004 + 0005 (prod) · ✅ `health_record` table + enums + pgmq + RLS · ✅ `documents` bucket + storage RLS · ✅ `CaptureSheet` + `UploadSection` · ✅ `POST /api/ingest` · ✅ `GET /api/records/[id]/file` (60 s signed URL) · ✅ `DocumentPreview` + `ReExtractButton` · ✅ `/records/[id]` detail page · ✅ 25 new i18n keys.
+**Sprint 5 (complete, 2026-06-25 → edit 2026-06-26):** ✅ `InsertRecordSchema` in `packages/core` · ✅ `createRecord` + `deleteRecord` Server Actions · ✅ `RecordForm` + `DeleteRecordButton` client components · ✅ `/records/new` page · ✅ detail page wired with Delete + Edit link · ✅ 17 new i18n keys · ✅ `/records/[id]/edit` page + `updateRecord` action.
+**Marketing landing (2026-06-26):** ✅ Public `/` landing built to `Design-System.md` §6 (7 sections, Warm Trust, scroll-reveal) · ✅ dashboard moved `/` → `/home` · ✅ desktop + mobile pixel-verified via agent-browser. ❌ landing i18n (inline English).
+**▶ Next session:** **Sprint 6 — PWA polish + M1 demo gate.** Also pending: pixel-verify the `/records/[id]/edit` flow, seed demo data so app screens aren't empty, wire landing copy into `t()`. Read order: this file → `docs/progress.md` (▶ RESUME HERE) → `docs/pr-history/pr3-sprint4-sprint5-records.md`.
 
 **M1 exit gate:** Upload a 3-page PDF → stores securely, lists, opens via signed URL. Direct URL without auth → 403. Manual entry → structured record on timeline. Demo: "add family, upload a report, see it stored securely."
 
@@ -299,3 +316,5 @@ Full ADR list: see `docs/Decisions.md` (canonical, ADR-001..021). Key decisions:
 10. **Spine first.** Cut levers (billing, Q&A, regional langs, ABDM) in that order; never cut: auth+RLS, capture+storage, AI auto-organise, trends, share, reminders, DPDP.
 11. **Tailwind tokens live in `packages/config/theme.css`.** Never hardcode colours.
 12. **`packages/core` stays framework-free.** No React, no Next.js, no Supabase imports.
+13. **Design-as-you-build — build like a professional, not "function now, polish later."** Every user-facing feature is *designed as part of building it*, not in a deferred polish pass. Before writing a screen/component, look up its design in `docs/design/UX-Plan.md` (§8 component inventory) + `docs/design/Design-System.md` (tokens, motion, component-feel rules). A feature is **not done** until it: uses Warm Trust tokens (no hardcoded hex/duration), uses Lucide icons (never emoji), has proper empty/loading/error states, is responsive (375/768/1024/1440) with no horizontal scroll, respects `prefers-reduced-motion` + elder mode, conveys status by icon+label (never colour alone), and **passes the Design-System §9 pre-delivery checklist**. **Verify pixels before claiming done** — drive `agent-browser` (open → screenshot `--full` → `set viewport` for mobile → click critical actions). "Typecheck + build green" is necessary, not sufficient.
+14. **Home dashboard lives at `/home`, not `/`** (since 2026-06-26). `/` is the public marketing landing (`app/(marketing)/`). When adding in-app navigation/redirects, target `/home`.
