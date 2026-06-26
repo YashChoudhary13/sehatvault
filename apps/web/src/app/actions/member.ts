@@ -48,8 +48,8 @@ export async function createMember(
 
   if (dbError) return { error: "members.form.error.save_failed" };
 
-  revalidatePath("/");
-  redirect("/");
+  revalidatePath("/home");
+  redirect("/home");
 }
 
 export async function updateMember(
@@ -93,7 +93,7 @@ export async function updateMember(
 
   if (dbError) return { error: "members.form.error.save_failed" };
 
-  revalidatePath("/");
+  revalidatePath("/home");
   revalidatePath(`/members/${id}`);
   redirect(`/members/${id}`);
 }
@@ -113,6 +113,6 @@ export async function deleteMember(id: string): Promise<MemberActionResult> {
 
   if (dbError) return { error: "members.form.error.save_failed" };
 
-  revalidatePath("/");
-  redirect("/");
+  revalidatePath("/home");
+  redirect("/home");
 }

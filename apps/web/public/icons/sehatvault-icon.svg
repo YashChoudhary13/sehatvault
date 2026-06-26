@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">SehatVault app icon</title>
+  <desc id="desc">A teal shield containing a secure health record mark.</desc>
+  <rect width="512" height="512" rx="112" fill="#FAFAF7" />
+  <path
+    fill="#0F766E"
+    d="M256 72 382 118v108c0 88-50 166-126 202-76-36-126-114-126-202V118l126-46Z"
+  />
+  <path
+    fill="#FFFFFF"
+    d="M256 120 338 150v73c0 58-31 111-82 140-51-29-82-82-82-140v-73l82-30Z"
+    opacity=".96"
+  />
+  <path
+    fill="#0F766E"
+    d="M235 174h42v55h55v42h-55v55h-42v-55h-55v-42h55v-55Z"
+  />
+  <path
+    fill="none"
+    stroke="#F59E0B"
+    stroke-linecap="round"
+    stroke-width="18"
+    d="M196 370c35 24 85 24 120 0"
+  />
+</svg>

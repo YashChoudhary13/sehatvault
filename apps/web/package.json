@@ -14,6 +14,7 @@
     "@node-rs/argon2": "^2.0.2",
     "@radix-ui/react-slot": "^1.1.1",
     "@sehatvault/core": "workspace:*",
+    "@sehatvault/db": "workspace:*",
     "@sehatvault/i18n": "workspace:*",
     "@supabase/ssr": "^0.5.2",
     "@supabase/supabase-js": "^2.47.10",

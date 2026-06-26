@@ -41,6 +41,9 @@ importers:
       '@sehatvault/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@sehatvault/db':
+        specifier: workspace:*
+        version: link:../../packages/db
       '@sehatvault/i18n':
         specifier: workspace:*
         version: link:../../packages/i18n
@@ -120,6 +123,15 @@ importers:
       vitest:
         specifier: ^2.1.8
         version: 2.1.9(@types/node@22.20.0)(lightningcss@1.32.0)
+
+  packages/db:
+    devDependencies:
+      '@sehatvault/config':
+        specifier: workspace:*
+        version: link:../config
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
 
   packages/i18n:
     devDependencies:

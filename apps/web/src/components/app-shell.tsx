@@ -7,6 +7,8 @@ import { PinPad } from "@/components/pin-pad";
 import { Button } from "@/components/ui/button";
 import { LocaleProvider, useT } from "@/components/locale-provider";
 import { MainNav } from "@/components/main-nav";
+import { OfflineBanner } from "@/components/offline-banner";
+import { SwRegister } from "@/components/sw-register";
 import type { Locale } from "@sehatvault/i18n";
 
 const IDLE_MS = 5 * 60 * 1000;
@@ -157,6 +159,7 @@ function AppLock({
 
   return (
     <>
+      <OfflineBanner />
       <MainNav />
       {/*
        * Content offset: desktop gets left margin for side rail (w-56 = 224px).
@@ -185,6 +188,7 @@ export function AppShell({ hasPinSet, locale, children }: AppShellProps) {
   return (
     <LocaleProvider initialLocale={locale}>
       <AppLock hasPinSet={hasPinSet}>{children}</AppLock>
+      <SwRegister />
     </LocaleProvider>
   );
 }
