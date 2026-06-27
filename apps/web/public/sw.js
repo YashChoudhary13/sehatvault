@@ -1,3 +1,4 @@
+/* global self, caches, fetch, URL */
 const CACHE_VERSION = "sehatvault-pwa-v1";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const OFFLINE_URL = "/offline.html";

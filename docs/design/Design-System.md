@@ -1,8 +1,8 @@
-# Design System — "Warm Trust"
+# Design System — "Calm Indigo"
 
-> **Status:** Approved design (2026-06-20). One cohesive design system shared by every surface of `apps/web` — the marketing site, the product app, and the doctor-share view. Companion to [`UX-Plan.md`](./UX-Plan.md) (in-app screens) and `architecture/Engineering-Plan.md` (stack).
+> **Status:** Updated 2026-06-27 (branch `feat/design-overhaul`). Supersedes the "Warm Trust" palette. One cohesive design system shared by every surface of `apps/web` — the marketing site, the product app, and the doctor-share view. Companion to [`UX-Plan.md`](./UX-Plan.md) (in-app screens) and `architecture/Engineering-Plan.md` (stack). See ADR-022.
 >
-> **One line:** Apple/Google-grade polish — restrained, purposeful motion and generous whitespace — in a *warm, trustworthy* skin built for Indian families, fully accessible (WCAG AA, elder mode, `prefers-reduced-motion`).
+> **One line:** Apple/Google-grade polish — restrained, purposeful motion and generous whitespace — in a *calm, indigo-trustworthy* skin built for Indian families, fully accessible (WCAG AA, elder mode, `prefers-reduced-motion`).
 
 ---
 
@@ -10,7 +10,7 @@
 
 1. **One system, two intensities.** Marketing uses the full design language (rich motion, large type, scroll-telling). The app uses a *calm subset* of the same tokens. They share one Tailwind preset and can never visually drift.
 2. **Motion serves comprehension, never spectacle.** Apple-restraint: at most one focal "wow" per viewport. Every animation is `prefers-reduced-motion`- and elder-mode-safe, and **motion never blocks content** (the original document always shows instantly; AI layers in after).
-3. **Warm, not clinical.** Teal = trust/health; a saffron accent adds family warmth and differentiates SehatVault from the sea of competitor clinical-blue (Eka, Driefcase, DigiLocker).
+3. **Calm, not clinical.** Indigo = premium/trust; teal accent adds warmth and health resonance while differentiating SehatVault from the sea of competitor clinical-blue (Eka, Driefcase, DigiLocker). Premium and calm — never loud.
 4. **Accessible by default.** AA contrast minimum, 44×44px touch targets, visible focus rings, Lucide SVG icons (never emoji), labels on all controls. Elder mode is a token swap, not a separate app.
 5. **Trust cues are visual primitives.** Lock icons, "only you can see this," visible share expiry, access-logged footers are first-class styled components, not afterthoughts.
 
@@ -22,47 +22,82 @@ Per `architecture/Engineering-Plan.md` (ADR-001: `apps/web` Next.js 15 PWA is th
 
 | Location | Owns |
 |---|---|
-| `packages/config/tailwind-preset.ts` | All design tokens — color, typography scale, spacing, radius, shadow, motion timings/easings, z-index scale. **Every surface extends this preset.** |
-| `packages/ui` | Shared primitives: shadcn/ui base components re-themed to tokens + a small `motion/` set (reduced-motion-aware Framer Motion wrappers). |
-| `apps/web/src/app/(marketing)/` | Marketing routes — full-motion client islands built from 21st.dev blocks restyled to tokens. |
-| `apps/web/src/app/(app)/` | Product app routes — calm-tier components from `UX-Plan.md` §8 inventory. |
+| `packages/config/theme.css` | All design tokens — Calm Indigo palette, elevation ladder, gradient tokens, motion tokens, typography scale, spacing, radius, shadow, z-index. **Every surface imports from here via CSS `@theme`.** |
+| `packages/ui` (`@sehatvault/ui`) | **Canonical design-system primitives** — motion (`resolveMotion`, `useMotionTier`, `MotionTierBox`/`Reveal`, `PageTransition`) + components (`Card`, `Button`, `EmptyState`, `Section`, `GradientField`, `HeroMedia`, `cn`). Consumes only `@sehatvault/config`. `apps/web` transpiles it. |
+| `apps/web/src/app/(marketing)/` | Marketing routes — full-motion client islands built on `@sehatvault/ui` primitives, Calm Indigo tokens. |
+| `apps/web/src/app/(app)/` | Product app routes — calm-tier components from `UX-Plan.md` §8 inventory, re-skinned onto `@sehatvault/ui`. |
 | `apps/web/src/app/s/[token]/` | Public doctor-share view — read-only, token-styled, no app chrome. |
+| `apps/web/src/app/design-preview/` | Hidden showcase route (gated out of production via middleware); proves the elevated system before rollout. |
 
 **Rule:** components import tokens from the preset; no surface hardcodes a hex value or a raw duration.
 
 ---
 
-## 3. Design tokens — "Warm Trust"
+## 3. Design tokens — "Calm Indigo"
+
+> Replaces the "Warm Trust" teal+amber-on-stone palette (retired as of ADR-022). Token names are semantic so a dark theme is a later flip — light values only now.
 
 ### 3.1 Color
 
-| Token | Hex | Use | Contrast notes |
+| Token | Value | Role | Contrast notes |
 |---|---|---|---|
-| `primary` (teal) | `#0F766E` | brand, primary buttons, links | AA on `bg`/`surface` |
-| `primary-ink` | `#134E4A` | brand text/headings accents | AAA on light |
-| `accent` (saffron) | `#F59E0B` | highlights, CTA emphasis, "+ Add" energy | use on dark/ink, not as small text on light |
-| `bg` | `#FAFAF7` (warm white) | page background | — |
-| `surface` | `#FFFFFF` | cards, sheets | — |
-| `ink` | `#1C1917` | body text | AA+ on `bg` |
-| `muted` | `#57534E` | secondary text | ≥4.5:1 on `bg` |
-| `border` | `#E7E5E4` | hairlines (used sparingly; prefer shadow) | — |
-| `success` | `#059669` | "normal / up to date" status | pair with icon + label |
-| `warn` | `#D97706` | "slightly high" status | pair with icon + label |
-| `danger` | `#DC2626` | "high / needs review", destructive | pair with icon + label |
+| `--color-primary` | `#4F46E5` | indigo — brand, primary actions, buttons, links | AA on `bg`/`surface` |
+| `--color-primary-ink` | `#312E81` | deep indigo — pressed state, headings on tint | AAA on light |
+| `--color-accent` | `#14B8A6` | teal — **sparing** accent/highlight (not primary CTA) | AA on `bg`; use on dark/ink for small text |
+| `--color-tint` | `#EEF2FF` | lavender wash — section/tint surfaces | — |
+| `--color-bg` | `#FBFBFE` | app/page background | — |
+| `--color-surface` | `#FFFFFF` | cards, sheets | — |
+| `--color-ink` | `#0F1729` | near-black slate — body text | AA+ on `bg` |
+| `--color-muted` | `#64748B` | cool-gray — secondary text | ≥4.5:1 on `bg` |
+| `--color-border` | `#E5E7EB` | hairlines (used sparingly; prefer elevation shadow) | — |
+| `--color-success` | `#059669` | "normal / up to date" status | pair with icon + label |
+| `--color-warn` | `#D97706` | "slightly high" status | pair with icon + label |
+| `--color-danger` | `#E11D48` | "high / needs review", destructive | pair with icon + label |
 
 **Health status chips never rely on color alone** — always icon + word ("⚠ slightly high"), per `UX-Plan.md` §3.
 
-**Anti-patterns (do not use):** neon/bright saturated fills, AI purple→pink gradients, motion-heavy carnival effects, color-only status. (Flagged for healthcare-trust products.)
+**Anti-patterns (do not use):** teal as a primary action (it's an accent only), neon/bright saturated fills, AI purple→pink gradients, motion-heavy carnival effects, color-only status.
 
-### 3.2 Typography
+### 3.2 Elevation ladder
 
-- **Family:** Plus Jakarta Sans (headings + body), weights 400 / 500 / 600 / 700. Self-hosted via `next/font` for performance + privacy.
+Four levels of depth, using `box-shadow` only (no hard borders for depth). Defined in `packages/config/theme.css` as `--elev-0..4`.
+
+| Token | Shadow | Use |
+|---|---|---|
+| `--elev-0` | none | flat surfaces (bg, section backgrounds) |
+| `--elev-1` | subtle | default card resting state |
+| `--elev-2` | raised | hovered card, focused input |
+| `--elev-3` | sheet | bottom sheet, side drawer |
+| `--elev-4` | modal | dialog, command palette |
+
+### 3.3 Gradient and glow tokens
+
+| Token | Purpose |
+|---|---|
+| `--mesh-hero` | Hero-section background mesh gradient (landing only) |
+| `--mesh-section` | Subtle section tint gradient (feature/trust sections) |
+| `--glow-accent` | Indigo glow for focal elements (one per viewport; not on dailyuse paths) |
+
+### 3.4 Motion tokens
+
+| Token | Duration / easing | Tier |
+|---|---|---|
+| `--motion-calm` | 200ms `cubic-bezier(0.23,1,0.32,1)` | in-app dailyuse paths |
+| `--motion-standard` | 360ms `cubic-bezier(0.23,1,0.32,1)` | modals, sheets, page transitions |
+| `--motion-expressive` | 600ms spring (Framer Motion) | marketing hero, first-time moments |
+
+All three tiers **degrade under `prefers-reduced-motion` AND elder mode** — movement is removed; opacity/color fades are kept where they aid comprehension.
+
+### 3.5 Typography
+
+- **Display family:** `--font-display` = Bricolage Grotesque (marketing headings, large hero text) via `next/font`.
+- **Body family:** Plus Jakarta Sans (body + app UI), weights 400 / 500 / 600 / 700. Self-hosted via `next/font` for performance + privacy.
 - **Body min 16px on mobile** (`readable-font-size`). Line-height 1.5–1.6 body; line-length capped 65–75ch on marketing prose.
 - **Scale (base, app):** `xs 12 · sm 14 · base 16 · lg 18 · xl 20 · 2xl 24 · 3xl 30 · 4xl 36`.
 - **Marketing display:** up to `5xl–7xl` for hero headlines (clamp/responsive).
 - **Elder mode:** multiply the type scale by **≥1.3×** and single-column (token-driven, same components).
 
-### 3.3 Spacing, radius, shadow, z-index
+### 3.6 Spacing, radius, shadow, z-index
 
 - **Spacing:** 4-pt grid (`1=4px … 2=8 · 3=12 · 4=16 · 6=24 · 8=32 · 12=48 · 16=64`).
 - **Radius:** `sm 8 · md 12 · lg 16 · xl 24` (cards `lg`, sheets `xl`, chips `full`).
@@ -72,9 +107,25 @@ Per `architecture/Engineering-Plan.md` (ADR-001: `apps/web` Next.js 15 PWA is th
 
 ---
 
-## 4. Motion system — two tiers, one config
+## 4. Motion system — three tiers, one config
 
-**Approved level: Apple-restrained** (not immersive/3D, not minimal-only). The guiding instinct (Emil Kowalski): *unseen details compound* — every animation must justify itself, use a strong custom curve, and disappear gracefully under reduced motion.
+**Approved level: Apple-restrained** (no 3D; rich 2D motion only). The guiding instinct (Emil Kowalski): *unseen details compound* — every animation must justify itself, use a strong custom curve, and disappear gracefully under reduced motion.
+
+**Three tiers** (keyed to context, `prefers-reduced-motion`, and elder mode):
+
+| Tier | Token | Context |
+|---|---|---|
+| **Calm** | `--motion-calm` (200ms) | In-app daily-use paths (nav, record list, buttons) |
+| **Standard** | `--motion-standard` (360ms) | Page transitions, modals, capture sheet, toasts |
+| **Expressive** | `--motion-expressive` (600ms spring) | Marketing hero, first-time onboarding moments |
+
+All tiers degrade under `prefers-reduced-motion` AND elder mode: movement is removed; opacity/color fades that aid comprehension are kept.
+
+**`@sehatvault/ui` motion primitives** (canonical — do not reimplement inline):
+- `resolveMotion(tier, reducedMotion, elderMode)` — returns safe props for Framer Motion
+- `useMotionTier()` — React hook reading `prefers-reduced-motion` + `data-elder` attribute
+- `MotionTierBox` (exported as `Reveal`) — scroll-reveal wrapper
+- `PageTransition` — wraps authenticated app shell; calm tier
 
 ### 4.0 Should it animate at all? (frequency gate — answer first)
 
@@ -135,12 +186,15 @@ Defined once in `packages/config` and consumed everywhere. **Never use `ease-in`
 
 ## 5. Component strategy
 
+**`@sehatvault/ui` is the canonical primitive layer.** All new components extend from it — do not reimplement `Card`, `Button`, `EmptyState`, `Section`, `GradientField`, `HeroMedia`, or motion wrappers inline in `apps/web`.
+
 | Surface | Source | Treatment |
 |---|---|---|
-| Marketing blocks (hero, feature, bento, testimonial, pricing) | **21st.dev** components | Restyled to Warm Trust tokens, wrapped in `motion/` primitives. Never shipped with default 21st.dev styling. |
-| App screens | **shadcn/ui** + `UX-Plan.md` §8 inventory (MemberCard, CaptureSheet, RecordCard, ReviewCard, TrendChart, MedItem, ReminderItem, ShareScopeForm, QRCard, ConsentRow, AccessLogRow, EmptyState, ProcessingCard, LanguageToggle, ElderModeProvider, AppLockGate) | Re-themed to tokens, calm-tier motion. |
+| Design-system primitives | **`@sehatvault/ui`** (`packages/ui`) | `Card`, `Button`, `EmptyState`, `Section`, `GradientField`, `HeroMedia`, `cn`; motion wrappers (`Reveal`, `PageTransition`, `MotionTierBox`). Calm Indigo tokens. |
+| Marketing blocks (hero, feature, bento, trust, pricing) | **`@sehatvault/ui`** primitives + landing-specific client islands | Expressive/standard tier motion. Primary CTAs are indigo; teal reserved for accents only. |
+| App screens | **`@sehatvault/ui`** + **shadcn/ui** + `UX-Plan.md` §8 inventory (MemberCard, CaptureSheet, RecordCard, ReviewCard, TrendChart, MedItem, ReminderItem, ShareScopeForm, QRCard, ConsentRow, AccessLogRow, EmptyState, ProcessingCard, LanguageToggle, ElderModeProvider, AppLockGate) | Calm-tier motion. Re-skinned onto Calm Indigo tokens. |
 | Icons | **Lucide** | Consistent 24×24 viewBox; never emoji. |
-| Charts | **Recharts** | Themed to palette; always with accessible table fallback + non-color encoding. |
+| Charts | **Recharts** | Themed to Calm Indigo palette; always with accessible table fallback + non-color encoding. |
 
 **Component-feel rules (apply to every primitive):**
 - **Pressables** (buttons, member cards, FAB, chips): `transform: scale(0.97)` on `:active`, `transition: transform 160ms var(--ease-out)`.
@@ -154,7 +208,7 @@ Defined once in `packages/config` and consumed everywhere. **Never use `ease-in`
 
 Route group `apps/web/src/app/(marketing)/`. RSC by default; motion lives in client islands only. SEO-first (metadata, semantic landmarks, fast LCP).
 
-1. **Hero** — headline + subhead + saffron **"Get started free"** CTA + phone mockup (spring-in). One focal moment.
+1. **Hero** — headline + subhead + indigo **"Get started free"** CTA + phone/device mockup (CSS or future `HeroMedia` video/poster). One focal moment.
 2. **Problem** — "records in plastic bags and drawers" narrative (scroll-reveal).
 3. **How it works** — 3 steps: capture → auto-organise → share (staggered reveal).
 4. **Feature bento** — timeline, trends, share-QR, reminders, AI Q&A.
@@ -167,7 +221,7 @@ Route group `apps/web/src/app/(marketing)/`. RSC by default; motion lives in cli
 
 ## 7. App re-skin & doctor-share
 
-- **App:** same routes/components from `UX-Plan.md`, re-themed to Warm Trust tokens + calm-tier motion. Bottom-tab nav with elevated saffron **+ Add** FAB; member-context switcher chip.
+- **App:** same routes/components from `UX-Plan.md`, re-skinned onto `@sehatvault/ui` primitives + Calm Indigo tokens + calm-tier motion. App shell wrapped in `PageTransition`; `MainNav` has depth + calm active transitions; `RecordCard` and `EmptyState` consume `@sehatvault/ui` `Card`/`EmptyState`.
 - **Elder mode (ADR-015):** token swap — ≥1.3× type, AA+ contrast, single column, ≥48px targets, icon+label, reduced motion. Same codebase.
 - **Doctor share (`/s/:token`, public):** clean read-only — member name/age/blood group, allergies banner, key trends, meds, record list with view buttons, footer "Shared securely via SehatVault · expires <when> · access logged." No app chrome, no nav, no motion beyond simple fades.
 
@@ -185,7 +239,7 @@ Route group `apps/web/src/app/(marketing)/`. RSC by default; motion lives in cli
 ## 9. Pre-delivery checklist (every UI PR)
 
 - [ ] No emoji as icons (Lucide SVG only).
-- [ ] Tokens used (no hardcoded hex / raw durations).
+- [ ] Calm Indigo tokens used (no hardcoded hex / raw durations); primitives from `@sehatvault/ui` where applicable.
 - [ ] `cursor-pointer` + visible hover feedback on all interactive elements.
 - [ ] Transitions 150–300ms; `transform`/`opacity` only.
 - [ ] Light-mode text contrast ≥4.5:1; borders/glass visible.
@@ -204,6 +258,7 @@ Route group `apps/web/src/app/(marketing)/`. RSC by default; motion lives in cli
 
 ## 10. Open decisions
 
-- **Premium type upgrade (optional):** Satoshi/General Sans (Fontshare) instead of Plus Jakarta Sans for extra premium feel on marketing — deferred; Plus Jakarta Sans is the committed default.
+- **Premium type upgrade (optional):** Satoshi/General Sans (Fontshare) instead of Plus Jakarta Sans for extra premium feel on marketing — deferred; Plus Jakarta Sans is the committed default. Bricolage Grotesque (`--font-display`) is now committed for display headings.
 - **Logo / wordmark:** not yet defined; will inform exact accent saturation and dark-section treatment.
-- **Dark mode:** out of scope for MVP marketing; app uses light + elder themes first.
+- **Dark mode:** token-ready (semantic CSS variable names, light values only) — not built. Flip later by overriding values in `theme.css` without touching component code. (ADR-022)
+- **Hero video/poster (`HeroMedia`):** component exists; Higgsfield assets deferred. Wire when assets are ready; add elder-mode check in `HeroMedia` at wire-time (recorded finding in `.superpowers/sdd/progress.md`).

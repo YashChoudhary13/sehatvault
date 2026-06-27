@@ -4,16 +4,10 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 
 interface RevealProps {
   children: ReactNode;
-  /** Stagger delay in ms applied once the element scrolls into view. */
   delay?: number;
   className?: string;
 }
 
-/**
- * Scroll-reveal: fade + 16px rise on first intersection, once.
- * Respects prefers-reduced-motion (shows immediately, no movement).
- * Transform/opacity only — GPU-friendly, never blocks content.
- */
 export function Reveal({ children, delay = 0, className }: RevealProps) {
   const ref = useRef<HTMLDivElement>(null);
   const [shown, setShown] = useState(false);
@@ -21,12 +15,13 @@ export function Reveal({ children, delay = 0, className }: RevealProps) {
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    const isReduced =
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches ||
+      document.documentElement.dataset.elder === "true";
+    if (isReduced) {
       setShown(true);
       return;
     }
-
     const io = new IntersectionObserver(
       (entries) => {
         if (entries[0]?.isIntersecting) {
@@ -37,11 +32,7 @@ export function Reveal({ children, delay = 0, className }: RevealProps) {
       { threshold: 0.15, rootMargin: "0px 0px -8% 0px" },
     );
     io.observe(el);
-
-    // Safety net: never leave content stuck at opacity 0 if the observer
-    // doesn't fire (no-scroll renders, headless capture, prefetch, etc.).
     const fallback = window.setTimeout(() => setShown(true), 1200);
-
     return () => {
       io.disconnect();
       window.clearTimeout(fallback);
@@ -55,8 +46,7 @@ export function Reveal({ children, delay = 0, className }: RevealProps) {
       style={{
         opacity: shown ? 1 : 0,
         transform: shown ? "none" : "translateY(16px)",
-        transition:
-          "opacity 600ms var(--ease-out), transform 600ms var(--ease-out)",
+        transition: "opacity var(--motion-standard) var(--ease-out), transform var(--motion-standard) var(--ease-out)",
         transitionDelay: shown ? `${delay}ms` : "0ms",
       }}
     >

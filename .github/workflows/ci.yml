@@ -25,6 +25,12 @@ jobs:
         run: pnpm test
       - name: Build web
         run: pnpm --filter web build
+        env:
+          # Public anon keys are browser-exposed by design; CI only needs non-empty,
+          # well-formed placeholders so static prerender (e.g. /login) can construct a
+          # Supabase client. Real values are injected by Vercel at deploy time.
+          NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-anon-key-for-ci-build-only
 
   db:
     runs-on: ubuntu-latest

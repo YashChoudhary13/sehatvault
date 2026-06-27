@@ -160,6 +160,21 @@
 - **Consequences:** Predictable, reviewable ordering that matches the backlog/sprint plan and the CI psql loop (`for f in supabase/migrations/*.sql`). One-time repair needed to retire the two timestamp entries on the remote.
 - **Revisit-when:** Multiple developers create migrations concurrently and sequential numbers start colliding → reconsider timestamps with a merge discipline.
 
+### ADR-022 — Design overhaul: Calm Indigo palette + motion tiers + `packages/ui` foundation
+- **Status:** Accepted (2026-06-27, branch `feat/design-overhaul`)
+- **Context:** The original "Warm Trust" system (teal + amber-on-stone) produced a clean but static, utilitarian feel — "safe government portal" — that didn't match the premium, trustworthy product ambition. The system needed to feel alive and purposeful without betraying core constraints: mid-range Android performance, India data costs, WCAG AA, `prefers-reduced-motion`, elder mode, and the privacy-calm tone. The risk was overshooting into flashy/anxious UI — equally wrong for a health-data product.
+- **Decision:**
+  - **Retire "Warm Trust"; adopt "Calm Indigo"** as the brand palette name and primary colour system: primary `#4F46E5` (indigo), accent `#14B8A6` (teal, sparing), tint surface `#EEF2FF`, bg `#FBFBFE`, ink `#0F1729`, muted `#64748B`, border `#E5E7EB`, success `#059669`, warn `#D97706`, danger `#E11D48`. Extended with elevation ladder (`--elev-0..4`), gradient tokens (`--mesh-hero`, `--mesh-section`, `--glow-accent`), and motion tokens (`--motion-calm`, `--motion-standard`, `--motion-expressive`).
+  - **Add `--font-display`** (Bricolage Grotesque via `next/font`) for headings; body remains Plus Jakarta Sans.
+  - **Three motion tiers** (calm / standard / expressive) — all degrade gracefully under `prefers-reduced-motion` AND elder mode; no 3D (rich 2D motion only).
+  - **Populate `packages/ui`** (`@sehatvault/ui`) with canonical design-system primitives: motion (`resolveMotion`, `useMotionTier`, `MotionTierBox`/`Reveal`, `PageTransition`) and components (`Card`, `Button`, `EmptyState`, `Section`, `GradientField`, `HeroMedia`, `cn`). Consumes only `@sehatvault/config`; `apps/web` transpiles it.
+  - **Build on a hidden `/design-preview` route** (gated out of production via middleware) → refactor landing → refactor in-app.
+  - **Dark mode:** token-ready (semantic CSS variable names) but **not built** — light-only ship; flip later with no rework.
+  - **Richer `/home` dashboard:** greeting + stats row (`summarizeDashboard` in `packages/core`) + recent-records strip + reused `UploadSection`. Uses only existing data/endpoints — no new tables or RLS changes.
+  - **Hero video/poster (Task 9) deferred:** `HeroMedia` component exists and is ready to wire; Higgsfield assets could not be generated in-environment; CSS device mockup retained. Apply recorded elder-mode `HeroMedia` fix at wire-time.
+- **Consequences:** Warm Trust name and teal-primary palette are retired across all docs and tokens. `packages/ui` is now a real, populated workspace — not a placeholder. Landing and in-app are on a shared primitive layer; future surfaces extend from `@sehatvault/ui` rather than duplicating motion/component logic in `apps/web`. Authed in-app live pixel-verify (desktop + 390px mobile) is pending a logged-in session (email-OTP login cannot be automated in-environment) — state this honestly, don't claim live-verified.
+- **Revisit-when:** Hero video assets are ready → wire `HeroMedia` (add elder-mode check at that time); dark mode investment is warranted → flip CSS variable values in `theme.css`.
+
 ---
 
 ## Decision dependency map

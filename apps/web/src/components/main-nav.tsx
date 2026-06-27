@@ -43,7 +43,7 @@ export function MainNav() {
     <>
       {/* ── Mobile: fixed bottom tab bar with elevated center FAB ──────────── */}
       <nav
-        className="fixed bottom-0 left-0 right-0 z-40 flex items-end border-t border-border bg-surface md:hidden"
+        className="fixed bottom-0 left-0 right-0 z-40 flex items-end border-t border-border bg-surface [box-shadow:var(--elev-2)] md:hidden"
         style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
         aria-label="Main navigation"
       >
@@ -55,7 +55,7 @@ export function MainNav() {
               key={href}
               href={href}
               className={cn(
-                "flex flex-1 flex-col items-center gap-1 py-3 text-xs font-medium transition-colors motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset",
+                "flex flex-1 flex-col items-center gap-1 py-3 text-xs font-medium transition-colors duration-[var(--motion-calm)] ease-[var(--ease-out)] motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset",
                 active ? "text-primary" : "text-muted",
               )}
               aria-current={active ? "page" : undefined}
@@ -85,7 +85,7 @@ export function MainNav() {
               key={href}
               href={href}
               className={cn(
-                "flex flex-1 flex-col items-center gap-1 py-3 text-xs font-medium transition-colors motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset",
+                "flex flex-1 flex-col items-center gap-1 py-3 text-xs font-medium transition-colors duration-[var(--motion-calm)] ease-[var(--ease-out)] motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset",
                 active ? "text-primary" : "text-muted",
               )}
               aria-current={active ? "page" : undefined}
@@ -99,7 +99,7 @@ export function MainNav() {
 
       {/* ── Desktop: fixed side rail ────────────────────────────────────────── */}
       <nav
-        className="fixed left-0 top-0 hidden h-full w-56 flex-col border-r border-border bg-surface md:flex"
+        className="fixed left-0 top-0 hidden h-full w-56 flex-col border-r border-border bg-surface [box-shadow:var(--elev-2)] md:flex"
         aria-label="Main navigation"
       >
         <div className="flex h-16 shrink-0 items-center border-b border-border px-5">
@@ -113,7 +113,7 @@ export function MainNav() {
                 key={href}
                 href={href}
                 className={cn(
-                  "flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+                  "flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors duration-[var(--motion-calm)] ease-[var(--ease-out)] motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
                   active
                     ? "bg-primary/10 text-primary"
                     : "text-muted hover:bg-bg hover:text-ink",

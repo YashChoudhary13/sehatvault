@@ -9,9 +9,25 @@
 --    If doc_select exists (old 0004 applied, rename via admin API), it is replaced.
 --    If neither exists, the block silently succeeds (idempotent guard).
 
--- ── 1. Trigger rename ────────────────────────────────────────────────────────────────
-alter trigger health_record_check_family on public.health_record
-  rename to check_hr_family_id;
+-- ── 1. Trigger rename (idempotent) ──────────────────────────────────────────────────
+-- Only the old (drifted) 0004 created "health_record_check_family"; the clean 0004 now
+-- creates "check_hr_family_id" directly. Guard so a fresh sequential replay (CI) — and a
+-- prod where the rename already happened — both no-op instead of erroring on a missing trigger.
+do $$
+begin
+  if exists (
+    select 1 from pg_trigger
+    where tgname = 'health_record_check_family'
+      and tgrelid = 'public.health_record'::regclass
+  ) then
+    alter trigger health_record_check_family on public.health_record
+      rename to check_hr_family_id;
+    raise notice 'trigger health_record_check_family → check_hr_family_id (renamed)';
+  else
+    raise notice 'trigger health_record_check_family absent — skipping (0004 created check_hr_family_id directly)';
+  end if;
+end;
+$$;
 
 -- ── 2. Storage policy rename (idempotent via DROP/CREATE) ───────────────────────────
 do $$

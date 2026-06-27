@@ -30,10 +30,6 @@ const validRecord = {
   summary: "Routine diabetes monitoring",
 } satisfies InsertRecordData;
 
-type SchemaParser<T> = {
-  parse: (input: unknown) => T;
-};
-
 const TEST_MAX_BYTES = 52_428_800;
 const TEST_SIGNED_URL_TTL_SECONDS = 60;
 
@@ -139,22 +135,6 @@ async function loadRecordFileRoute() {
   applyModuleMocks();
   return importRuntimeModule<RecordFileRouteModule>(
     "../../../apps/web/src/app/api/records/[id]/file/route",
-  );
-}
-
-async function loadRecordActions() {
-  vi.resetModules();
-  applyModuleMocks();
-  return importRuntimeModule<RecordActionsModule>(
-    "../../../apps/web/src/app/actions/record",
-  );
-}
-
-async function loadRecordEditActions() {
-  vi.resetModules();
-  applyModuleMocks();
-  return importRuntimeModule<RecordEditActionsModule>(
-    "../../../apps/web/src/app/actions/record-edit",
   );
 }
 

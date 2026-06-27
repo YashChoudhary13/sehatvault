@@ -1,0 +1,9 @@
+{
+  "extends": "@sehatvault/config/tsconfig.base.json",
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "lib": ["DOM", "DOM.Iterable", "ES2022"],
+    "noEmit": true
+  },
+  "include": ["src"]
+}

@@ -9,6 +9,7 @@ import { LocaleProvider, useT } from "@/components/locale-provider";
 import { MainNav } from "@/components/main-nav";
 import { OfflineBanner } from "@/components/offline-banner";
 import { SwRegister } from "@/components/sw-register";
+import { PageTransition } from "@sehatvault/ui/motion";
 import type { Locale } from "@sehatvault/i18n";
 
 const IDLE_MS = 5 * 60 * 1000;
@@ -171,7 +172,7 @@ function AppLock({
           paddingBottom: "calc(4rem + env(safe-area-inset-bottom, 0px))",
         }}
       >
-        {children}
+        <PageTransition>{children}</PageTransition>
       </div>
     </>
   );
