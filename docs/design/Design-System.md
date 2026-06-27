@@ -82,9 +82,9 @@ Four levels of depth, using `box-shadow` only (no hard borders for depth). Defin
 
 | Token | Duration / easing | Tier |
 |---|---|---|
-| `--motion-calm` | 150ms `cubic-bezier(0.23,1,0.32,1)` | in-app dailyuse paths |
-| `--motion-standard` | 250ms `cubic-bezier(0.23,1,0.32,1)` | modals, sheets, page transitions |
-| `--motion-expressive` | 450ms spring (Framer Motion) | marketing hero, first-time moments |
+| `--motion-calm` | 200ms `cubic-bezier(0.23,1,0.32,1)` | in-app dailyuse paths |
+| `--motion-standard` | 360ms `cubic-bezier(0.23,1,0.32,1)` | modals, sheets, page transitions |
+| `--motion-expressive` | 600ms spring (Framer Motion) | marketing hero, first-time moments |
 
 All three tiers **degrade under `prefers-reduced-motion` AND elder mode** — movement is removed; opacity/color fades are kept where they aid comprehension.
 
@@ -115,9 +115,9 @@ All three tiers **degrade under `prefers-reduced-motion` AND elder mode** — mo
 
 | Tier | Token | Context |
 |---|---|---|
-| **Calm** | `--motion-calm` (150ms) | In-app daily-use paths (nav, record list, buttons) |
-| **Standard** | `--motion-standard` (250ms) | Page transitions, modals, capture sheet, toasts |
-| **Expressive** | `--motion-expressive` (450ms spring) | Marketing hero, first-time onboarding moments |
+| **Calm** | `--motion-calm` (200ms) | In-app daily-use paths (nav, record list, buttons) |
+| **Standard** | `--motion-standard` (360ms) | Page transitions, modals, capture sheet, toasts |
+| **Expressive** | `--motion-expressive` (600ms spring) | Marketing hero, first-time onboarding moments |
 
 All tiers degrade under `prefers-reduced-motion` AND elder mode: movement is removed; opacity/color fades that aid comprehension are kept.
 
