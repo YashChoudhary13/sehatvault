@@ -65,7 +65,7 @@ function Hero({ locale }: { locale: Locale }) {
             <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
               <Link
                 href="/login"
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-accent px-6 py-3.5 text-base font-semibold text-ink shadow-sm transition-[transform,filter] duration-150 ease-[var(--ease-out)] hover:brightness-95 active:scale-[0.97] motion-reduce:transition-none motion-reduce:active:scale-100"
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3.5 text-base font-semibold text-white shadow-sm transition-[transform,filter] duration-150 ease-[var(--ease-out)] hover:brightness-95 active:scale-[0.97] motion-reduce:transition-none motion-reduce:active:scale-100"
               >
                 {t(locale, "landing.hero.cta_primary")}
                 <ArrowRight className="h-4 w-4 stroke-[2.5]" />
@@ -560,7 +560,7 @@ function PriceCard({
           "mt-6 inline-flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold transition-[transform,filter,background-color] duration-150 ease-[var(--ease-out)] active:scale-[0.97] motion-reduce:transition-none motion-reduce:active:scale-100",
           highlighted
             ? "border border-primary bg-surface text-primary hover:bg-primary/5"
-            : "bg-accent text-ink hover:brightness-95",
+            : "bg-primary text-white hover:brightness-95",
         )}
       >
         {cta}
@@ -588,7 +588,7 @@ function FinalCta({ locale }: { locale: Locale }) {
             </p>
             <Link
               href="/login"
-              className="mt-8 inline-flex items-center justify-center gap-2 rounded-xl bg-accent px-7 py-3.5 text-base font-semibold text-ink shadow-sm transition-[transform,filter] duration-150 ease-[var(--ease-out)] hover:brightness-95 active:scale-[0.97] motion-reduce:transition-none motion-reduce:active:scale-100"
+              className="mt-8 inline-flex items-center justify-center gap-2 rounded-xl bg-surface px-7 py-3.5 text-base font-semibold text-primary shadow-sm transition-[transform,filter] duration-150 ease-[var(--ease-out)] hover:brightness-95 active:scale-[0.97] motion-reduce:transition-none motion-reduce:active:scale-100"
             >
               {t(locale, "landing.cta.button")}
               <ArrowRight className="h-4 w-4 stroke-[2.5]" />
