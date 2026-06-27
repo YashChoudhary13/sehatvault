@@ -19,7 +19,8 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { t, type Locale } from "@sehatvault/i18n";
-import { Reveal } from "./_components/reveal";
+import { Section, GradientField, Card, cn } from "@sehatvault/ui";
+import { Reveal } from "@sehatvault/ui/motion";
 import { getMarketingLocale } from "@/lib/marketing-locale";
 
 export default async function MarketingPage() {
@@ -40,12 +41,8 @@ export default async function MarketingPage() {
 /* ── 1. Hero ──────────────────────────────────────────────────────────────── */
 function Hero({ locale }: { locale: Locale }) {
   return (
-    <section className="relative overflow-hidden">
-      {/* soft warm glow, no harsh gradient */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-x-0 -top-32 mx-auto h-72 max-w-3xl rounded-full bg-primary/5 blur-3xl"
-      />
+    <Section className="overflow-hidden">
+      <GradientField variant="hero" />
       <div className="mx-auto grid max-w-6xl items-center gap-12 px-5 py-16 sm:px-8 lg:grid-cols-[1.05fr_0.95fr] lg:py-24">
         <div>
           <Reveal>
@@ -55,7 +52,7 @@ function Hero({ locale }: { locale: Locale }) {
             </span>
           </Reveal>
           <Reveal delay={60}>
-            <h1 className="mt-5 text-4xl font-bold leading-[1.1] tracking-tight text-primary-ink sm:text-5xl">
+            <h1 className="mt-5 text-4xl font-bold leading-[1.1] tracking-tight text-primary-ink sm:text-5xl font-[family-name:var(--font-display)]">
               {t(locale, "landing.hero.headline")}
             </h1>
           </Reveal>
@@ -93,14 +90,14 @@ function Hero({ locale }: { locale: Locale }) {
           <PhoneMockup />
         </Reveal>
       </div>
-    </section>
+    </Section>
   );
 }
 
 /* CSS device mockup — the single hero focal point. */
 function PhoneMockup() {
   return (
-    <div className="relative w-[280px] rounded-[2.25rem] border border-border bg-surface p-3 shadow-[0_24px_60px_-20px_rgba(19,78,74,0.35)]">
+    <div className="relative w-[280px] rounded-[2.25rem] border border-border bg-surface p-3 shadow-[0_24px_60px_-20px_rgba(79,70,229,0.35)]">
       <div className="overflow-hidden rounded-[1.75rem] bg-bg">
         {/* status bar */}
         <div className="flex items-center justify-between px-5 pt-4 text-[10px] font-medium text-muted">
@@ -206,7 +203,7 @@ function Problem({ locale }: { locale: Locale }) {
     <section className="border-y border-border bg-surface">
       <div className="mx-auto max-w-3xl px-5 py-16 text-center sm:px-8 lg:py-20">
         <Reveal>
-          <h2 className="text-3xl font-bold tracking-tight text-primary-ink sm:text-4xl">
+          <h2 className="text-3xl font-bold tracking-tight text-primary-ink sm:text-4xl font-[family-name:var(--font-display)]">
             {t(locale, "landing.problem.heading")}
           </h2>
         </Reveal>
@@ -218,9 +215,9 @@ function Problem({ locale }: { locale: Locale }) {
         <div className="mt-10 grid gap-4 text-left sm:grid-cols-3">
           {pains.map((p, i) => (
             <Reveal key={i} delay={i * 80}>
-              <div className="h-full rounded-2xl border border-border bg-bg p-5 text-sm leading-relaxed text-ink">
+              <Card className="h-full p-5 text-sm leading-relaxed text-ink">
                 {p}
-              </div>
+              </Card>
             </Reveal>
           ))}
         </div>
@@ -256,7 +253,7 @@ function HowItWorks({ locale }: { locale: Locale }) {
             <p className="text-sm font-semibold uppercase tracking-wide text-primary">
               {t(locale, "landing.how.eyebrow")}
             </p>
-            <h2 className="mt-2 text-3xl font-bold tracking-tight text-primary-ink sm:text-4xl">
+            <h2 className="mt-2 text-3xl font-bold tracking-tight text-primary-ink sm:text-4xl font-[family-name:var(--font-display)]">
               {t(locale, "landing.how.heading")}
             </h2>
           </div>
@@ -264,7 +261,7 @@ function HowItWorks({ locale }: { locale: Locale }) {
         <div className="mt-12 grid gap-6 md:grid-cols-3">
           {steps.map(({ icon: Icon, title, body }, i) => (
             <Reveal key={i} delay={i * 100}>
-              <div className="relative h-full rounded-2xl border border-border bg-surface p-6 shadow-[0_2px_12px_-6px_rgba(28,25,23,0.15)]">
+              <Card elevation={2} className="relative h-full p-6">
                 <span className="absolute right-5 top-5 text-sm font-bold text-border">
                   0{i + 1}
                 </span>
@@ -273,7 +270,7 @@ function HowItWorks({ locale }: { locale: Locale }) {
                 </span>
                 <h3 className="mt-5 text-lg font-semibold text-ink">{title}</h3>
                 <p className="mt-2 text-sm leading-relaxed text-muted">{body}</p>
-              </div>
+              </Card>
             </Reveal>
           ))}
         </div>
@@ -292,7 +289,7 @@ function Features({ locale }: { locale: Locale }) {
             <p className="text-sm font-semibold uppercase tracking-wide text-primary">
               {t(locale, "landing.features.eyebrow")}
             </p>
-            <h2 className="mt-2 text-3xl font-bold tracking-tight text-primary-ink sm:text-4xl">
+            <h2 className="mt-2 text-3xl font-bold tracking-tight text-primary-ink sm:text-4xl font-[family-name:var(--font-display)]">
               {t(locale, "landing.features.heading")}
             </h2>
           </div>
@@ -359,7 +356,7 @@ function BentoCard({
   soonLabel?: string;
 }) {
   return (
-    <div className="flex h-full flex-col rounded-2xl border border-border bg-bg p-6">
+    <Card className="flex h-full flex-col p-6">
       <div className="flex items-center justify-between">
         <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
           <Icon className="h-5 w-5" />
@@ -371,7 +368,10 @@ function BentoCard({
         )}
       </div>
       <h3
-        className={`mt-5 font-semibold text-ink ${large ? "text-xl" : "text-lg"}`}
+        className={cn(
+          "mt-5 font-semibold text-ink font-[family-name:var(--font-display)]",
+          large ? "text-xl" : "text-lg",
+        )}
       >
         {title}
       </h3>
@@ -380,7 +380,7 @@ function BentoCard({
       >
         {body}
       </p>
-    </div>
+    </Card>
   );
 }
 
@@ -418,7 +418,7 @@ function Privacy({ locale }: { locale: Locale }) {
                 <ShieldCheck className="h-3.5 w-3.5 text-primary" />
                 {t(locale, "landing.privacy.badge")}
               </span>
-              <h2 className="mt-5 text-3xl font-bold tracking-tight text-primary-ink sm:text-4xl">
+              <h2 className="mt-5 text-3xl font-bold tracking-tight text-primary-ink sm:text-4xl font-[family-name:var(--font-display)]">
                 {t(locale, "landing.privacy.heading")}
               </h2>
               <p className="mt-4 max-w-md text-lg text-muted">
@@ -429,7 +429,7 @@ function Privacy({ locale }: { locale: Locale }) {
           <div className="grid gap-4 sm:grid-cols-2">
             {items.map(({ icon: Icon, title, body }, i) => (
               <Reveal key={i} delay={i * 80}>
-                <div className="h-full rounded-2xl border border-border bg-surface p-5">
+                <Card className="h-full p-5">
                   <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
                     <Icon className="h-5 w-5" />
                   </span>
@@ -439,7 +439,7 @@ function Privacy({ locale }: { locale: Locale }) {
                   <p className="mt-1.5 text-sm leading-relaxed text-muted">
                     {body}
                   </p>
-                </div>
+                </Card>
               </Reveal>
             ))}
           </div>
@@ -456,7 +456,7 @@ function Pricing({ locale }: { locale: Locale }) {
       <div className="mx-auto max-w-5xl px-5 py-16 sm:px-8 lg:py-24">
         <Reveal>
           <div className="mx-auto max-w-2xl text-center">
-            <h2 className="text-3xl font-bold tracking-tight text-primary-ink sm:text-4xl">
+            <h2 className="text-3xl font-bold tracking-tight text-primary-ink sm:text-4xl font-[family-name:var(--font-display)]">
               {t(locale, "landing.pricing.heading")}
             </h2>
             <p className="mt-4 text-lg text-muted">
@@ -526,12 +526,12 @@ function PriceCard({
   badge?: string;
 }) {
   return (
-    <div
-      className={`flex h-full flex-col rounded-2xl border p-7 ${
-        highlighted
-          ? "border-primary bg-bg shadow-[0_12px_40px_-16px_rgba(15,118,110,0.4)]"
-          : "border-border bg-bg"
-      }`}
+    <Card
+      elevation={highlighted ? 3 : 1}
+      className={cn(
+        "flex h-full flex-col p-7",
+        highlighted && "border-[var(--color-primary)]",
+      )}
     >
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold text-ink">{name}</h3>
@@ -556,15 +556,16 @@ function PriceCard({
       </ul>
       <Link
         href="/login"
-        className={`mt-6 inline-flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold transition-[transform,filter,background-color] duration-150 ease-[var(--ease-out)] active:scale-[0.97] motion-reduce:transition-none motion-reduce:active:scale-100 ${
+        className={cn(
+          "mt-6 inline-flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold transition-[transform,filter,background-color] duration-150 ease-[var(--ease-out)] active:scale-[0.97] motion-reduce:transition-none motion-reduce:active:scale-100",
           highlighted
             ? "border border-primary bg-surface text-primary hover:bg-primary/5"
-            : "bg-accent text-ink hover:brightness-95"
-        }`}
+            : "bg-accent text-ink hover:brightness-95",
+        )}
       >
         {cta}
       </Link>
-    </div>
+    </Card>
   );
 }
 
@@ -579,7 +580,7 @@ function FinalCta({ locale }: { locale: Locale }) {
               aria-hidden
               className="pointer-events-none absolute -right-12 -top-12 h-48 w-48 rounded-full bg-accent/20 blur-2xl"
             />
-            <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
+            <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl font-[family-name:var(--font-display)]">
               {t(locale, "landing.cta.heading")}
             </h2>
             <p className="mx-auto mt-4 max-w-xl text-lg text-white/85">
