@@ -97,7 +97,7 @@ function Hero({ locale }: { locale: Locale }) {
 /* CSS device mockup — the single hero focal point. */
 function PhoneMockup() {
   return (
-    <div className="relative w-[280px] rounded-[2.25rem] border border-border bg-surface p-3 shadow-[0_24px_60px_-20px_rgba(79,70,229,0.35)]">
+    <div className="relative w-[280px] rounded-[2.25rem] border border-border bg-surface p-3 shadow-[0_24px_60px_-20px_color-mix(in_srgb,var(--color-primary)_35%,transparent)]">
       <div className="overflow-hidden rounded-[1.75rem] bg-bg">
         {/* status bar */}
         <div className="flex items-center justify-between px-5 pt-4 text-[10px] font-medium text-muted">
@@ -268,7 +268,7 @@ function HowItWorks({ locale }: { locale: Locale }) {
                 <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
                   <Icon className="h-6 w-6" />
                 </span>
-                <h3 className="mt-5 text-lg font-semibold text-ink">{title}</h3>
+                <h3 className="mt-5 text-lg font-semibold text-ink font-[family-name:var(--font-display)]">{title}</h3>
                 <p className="mt-2 text-sm leading-relaxed text-muted">{body}</p>
               </Card>
             </Reveal>
@@ -433,7 +433,7 @@ function Privacy({ locale }: { locale: Locale }) {
                   <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
                     <Icon className="h-5 w-5" />
                   </span>
-                  <h3 className="mt-4 text-base font-semibold text-ink">
+                  <h3 className="mt-4 text-base font-semibold text-ink font-[family-name:var(--font-display)]">
                     {title}
                   </h3>
                   <p className="mt-1.5 text-sm leading-relaxed text-muted">
@@ -534,7 +534,7 @@ function PriceCard({
       )}
     >
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-ink">{name}</h3>
+        <h3 className="text-lg font-semibold text-ink font-[family-name:var(--font-display)]">{name}</h3>
         {highlighted && badge && (
           <span className="rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-semibold text-primary">
             {badge}
