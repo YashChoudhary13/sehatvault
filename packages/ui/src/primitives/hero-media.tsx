@@ -42,7 +42,6 @@ export function HeroMedia({ poster, src, srcWebm, className, alt }: HeroMediaPro
           <source src={src} type="video/mp4" />
         </video>
       ) : (
-        // eslint-disable-next-line @next/next/no-img-element
         <img src={poster} alt={alt} className="h-full w-full object-cover" />
       )}
     </div>
