@@ -2,11 +2,11 @@
 
 > **Related docs:** [Planning](planning/Planning.md) · [Decisions](Decisions.md) · [Engineering-Plan](architecture/Engineering-Plan.md) · [DOCUMENTATION](DOCUMENTATION.md)
 
-> **Last updated:** 2026-06-26
-> **Current milestone:** M1 — Manual Vault (**COMPLETE & pixel-verified** 2026-06-26; Sprints 2–6 done; on branch `feat/m1-manual-vault`)
-> **Active branch:** `feat/m1-manual-vault` (7 slices; ready for PR → `main`)
+> **Last updated:** 2026-06-27
+> **Current milestone:** M1 — Manual Vault (**COMPLETE & pixel-verified** 2026-06-26) + **Calm Indigo design overhaul COMPLETE** (branch `feat/design-overhaul`, 2026-06-27)
+> **Active branches:** `feat/m1-manual-vault` (7 slices; ready for PR → `main`) · `feat/design-overhaul` (design overhaul; built on top of M1)
 >
-> **▶ RESUME HERE (next session):** **M1 is reached.** Sprints 2–6 complete on branch `feat/m1-manual-vault`. Verified by the lead with a cold typecheck/build/test (48 tests pass) AND a live agent-browser pixel pass against `localhost:3000` with the **remote demo seed applied** (`demo@sehatvault.dev` / Sharma family / 3 members / 6 records): landing (desktop), `/home`, `/records` timeline + filter chips + grouping (desktop + 390px mobile), unauth gate (307/401). The 2-agent round (Agent A = records UX/states/i18n + a11y focus rings; Agent B = M1 storage-gate hardening + contract/RLS tests) integrated clean, zero collisions. **Closed:** demo seed applied; i18n wired (landing already through `t()`, 246-key parity, Install button uses `t()`); `audit_log` correctly deferred to M4 (removed from this round). **⭐ FIRST TASK NEXT SESSION = the major UI/design overhaul.** Read [`design/Design-Overhaul.md`](design/Design-Overhaul.md) (direction doc: premium/welcoming/"big-company" feel via Framer motion, select 3D, video + Higgsfield assets — premium-but-calm, fast on low-end Android, elder-mode safe) and **start with the `superpowers:brainstorming` flow** to lock the open decisions (surface focus, how far to push 3D, video usage, Higgsfield pipeline; scope "more functionality" separately) → write the spec → `writing-plans` → build. Do NOT start implementation before those decisions are approved. Read order: `../CLAUDE.md` → this file → **`design/Design-Overhaul.md`** → `design/Design-System.md` → `design/UX-Plan.md`.
+> **▶ RESUME HERE (next session):** **M1 + design overhaul complete.** Sprints 2–6 complete on branch `feat/m1-manual-vault`. Verified by the lead with a cold typecheck/build/test (48 tests pass) AND a live agent-browser pixel pass against `localhost:3000` with the **remote demo seed applied** (`demo@sehatvault.dev` / Sharma family / 3 members / 6 records): landing (desktop), `/home`, `/records` timeline + filter chips + grouping (desktop + 390px mobile), unauth gate (307/401). The 2-agent round (Agent A = records UX/states/i18n + a11y focus rings; Agent B = M1 storage-gate hardening + contract/RLS tests) integrated clean, zero collisions. **Closed:** demo seed applied; i18n wired (landing already through `t()`, 246-key parity, Install button uses `t()`); `audit_log` correctly deferred to M4 (removed from this round). **⭐ FIRST TASK NEXT SESSION = the major UI/design overhaul.** Read [`design/Design-Overhaul.md`](design/Design-Overhaul.md) (direction doc: premium/welcoming/"big-company" feel via Framer motion, select 3D, video + Higgsfield assets — premium-but-calm, fast on low-end Android, elder-mode safe) and **start with the `superpowers:brainstorming` flow** to lock the open decisions (surface focus, how far to push 3D, video usage, Higgsfield pipeline; scope "more functionality" separately) → write the spec → `writing-plans` → build. Do NOT start implementation before those decisions are approved. Read order: `../CLAUDE.md` → this file → **`design/Design-Overhaul.md`** → `design/Design-System.md` → `design/UX-Plan.md`.
 
 ---
 
@@ -16,10 +16,10 @@
 
 **Before building any user-facing screen/component**, read its spec:
 - `docs/design/UX-Plan.md` — screen flows + §8 component inventory (MemberCard, CaptureSheet, RecordCard, TrendChart, ReviewCard, ShareScopeForm, QRCard, EmptyState, ProcessingCard, …).
-- `docs/design/Design-System.md` — Warm Trust tokens, motion tiers, component-feel rules.
+- `docs/design/Design-System.md` — Calm Indigo tokens, motion tiers, `@sehatvault/ui` primitives, component-feel rules.
 
 **A feature is _done_ only when it meets this Definition of Done:**
-1. Uses Warm Trust **tokens** (`packages/config/theme.css`) — no hardcoded hex or raw durations.
+1. Uses **Calm Indigo tokens** (`packages/config/theme.css`) + **`@sehatvault/ui`** primitives — no hardcoded hex or raw durations.
 2. **Lucide** icons only (never emoji); status = **icon + label** (never colour alone).
 3. Has real **empty / loading / error** states (skeletons over spinners; reserve space, no layout jump).
 4. **Responsive** at 375 / 768 / 1024 / 1440 — no horizontal scroll on mobile.
@@ -165,6 +165,30 @@ Every sprint below now carries an explicit **Design** step + this DoD.
 | Pixel verification (desktop + mobile) | ✅ | agent-browser; full-page + 390px viewport; all sections render, no overflow |
 | Design DoD compliance | ✅ | Warm Trust tokens, Lucide icons, icon+label status, responsive, reduced-motion |
 | Landing i18n (`t()`, en + hi) | ❌ | Copy is inline English; no marketing language toggle — **scheduled follow-up** |
+
+---
+
+### Design Overhaul — Calm Indigo (completed 2026-06-27, branch `feat/design-overhaul`)
+
+> Built per approved spec `docs/superpowers/specs/2026-06-26-design-overhaul-design.md` and executed plan `docs/superpowers/plans/2026-06-26-design-overhaul.md` (Tasks 1–13; Task 9 deferred). Full ledger: `.superpowers/sdd/progress.md`.
+
+| Task | Status | Notes |
+|------|--------|-------|
+| **Foundation: Calm Indigo palette** (`packages/config/theme.css`) | ✅ | Replaces Warm Trust; primary `#4F46E5` indigo, accent `#14B8A6` teal; elevation `--elev-0..4`; gradient tokens `--mesh-hero/section/--glow-accent`; motion tokens `--motion-calm/standard/expressive`; `--font-display` (Bricolage Grotesque) |
+| **`packages/ui` (`@sehatvault/ui`) populated** | ✅ | Motion primitives: `resolveMotion`, `useMotionTier`, `MotionTierBox`/`Reveal`, `PageTransition`. Component primitives: `Card`, `Button`, `EmptyState`, `Section`, `GradientField`, `HeroMedia`, `cn`. Consumes only `@sehatvault/config`. |
+| 3 motion tiers (calm/standard/expressive) + reduced-motion/elder degradation | ✅ | All tiers degrade under `prefers-reduced-motion` AND `data-elder`; `useMotionTier` does not react to runtime elder toggle (no MutationObserver) — defer to M3 `ElderModeProvider` |
+| Hidden `/design-preview` showcase route | ✅ | Gated out of production via middleware |
+| **Landing refactored** onto `@sehatvault/ui` + Calm Indigo | ✅ | Primary CTAs are indigo; teal reserved for accents; `--font-display` Bricolage Grotesque on hero; **live pixel-verified** desktop + 390px mobile |
+| App shell wrapped in calm `PageTransition` | ✅ | |
+| `MainNav` re-skinned: depth + calm active transitions | ✅ | Responsive + safe-area preserved |
+| `RecordCard` re-skinned onto `ui Card` | ✅ | |
+| Shared `EmptyState` adopted from `@sehatvault/ui` | ✅ | |
+| **Richer `/home` dashboard** | ✅ | Greeting + `summarizeDashboard` stats row (members/records/recent-7-days, via `packages/core`) + recent-records strip (`RecordCard`) + `UploadSection`; existing data/endpoints only — no new tables or RLS |
+| Hardcoded colour sweep (Task 13) | ✅ | 0 stragglers; only required PWA literal hexes remain (already Calm Indigo) |
+| **Task 9 — Hero video/poster (Higgsfield assets)** | ❌ DEFERRED | Assets cannot be generated in-environment; CSS device mockup retained; `HeroMedia` component exists and ready to wire. Apply recorded elder-mode fix at wire-time. |
+| Authed in-app live pixel-verify (desktop + 390px) | ⏳ PENDING | Email-OTP login cannot be automated; typecheck + build + code-review verified; live pass pending a logged-in session |
+
+**Brand rename:** "Warm Trust" → "Calm Indigo" (palette name). `packages/ui` (`@sehatvault/ui`) is now a populated workspace — not a placeholder.
 
 ---
 

@@ -1,3 +1,5 @@
+> **SUPERSEDED & IMPLEMENTED** — see `docs/superpowers/specs/2026-06-26-design-overhaul-design.md` (approved spec) and `docs/superpowers/plans/2026-06-26-design-overhaul.md` (executed plan). Calm Indigo overhaul shipped on branch `feat/design-overhaul`; Task 9 hero video/poster assets deferred (HeroMedia component exists, ready to wire).
+
 # SehatVault — UI/Design Overhaul (Direction & Plan)
 
 > **Status:** DIRECTION DOC — not yet an approved spec. Captured **2026-06-26** at the user's request as the **FIRST task for next session**.
