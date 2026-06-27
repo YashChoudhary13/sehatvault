@@ -85,7 +85,7 @@ export default async function RecordsPage() {
               ? t(locale, "members.empty.description")
               : t(locale, "records.empty.description")
           }
-          actionButton={
+          action={
             safeMembers.length > 0 ? (
               <UploadSection members={safeMembers} locale={locale} />
             ) : (

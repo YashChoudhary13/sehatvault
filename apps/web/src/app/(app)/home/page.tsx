@@ -65,7 +65,7 @@ export default async function HomePage() {
           icon={Users}
           title={t(locale, "members.empty.title")}
           description={t(locale, "members.empty.description")}
-          actionButton={
+          action={
             <Button asChild>
               <Link href="/members/new">
                 {t(locale, "members.empty.action")}

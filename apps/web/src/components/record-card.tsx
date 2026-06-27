@@ -15,6 +15,7 @@ import {
   Loader2,
   type LucideIcon,
 } from "lucide-react";
+import { Card } from "@sehatvault/ui";
 import { cn } from "@/lib/utils";
 
 const TYPE_ICON: Record<string, LucideIcon> = {
@@ -71,39 +72,36 @@ export function RecordCard({
   const statusColor = STATUS_COLOR[ocrStatus] ?? "text-muted";
 
   return (
-    <Link
-      href={`/records/${id}`}
-      className={cn(
-        "group flex min-h-[4rem] items-center gap-3 rounded-xl border border-border bg-surface p-4",
-        "transition-[border-color,background-color,transform] duration-150",
-        "hover:border-primary/30 hover:bg-bg",
-        "active:scale-[0.97]",
-      )}
-    >
-      {/* Type icon */}
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10">
-        <TypeIcon className="h-5 w-5 text-primary" aria-hidden="true" />
-      </div>
-
-      {/* Content */}
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-semibold leading-snug text-primary-ink">
-          {title}
-        </p>
-        <p className="mt-0.5 truncate text-xs text-muted">
-          {memberName} · {typeLabel} · {displayDate}
-        </p>
-      </div>
-
-      {/* Status: icon + label; label hidden on xs, always readable via sr-only + title */}
-      <div
-        className={cn("flex shrink-0 items-center gap-1", statusColor)}
-        title={statusLabel}
+    <Card interactive elevation={1}>
+      <Link
+        href={`/records/${id}`}
+        className="group flex min-h-[4rem] items-center gap-3 rounded-[var(--radius-lg)] p-4 transition-transform duration-[var(--motion-calm)] ease-[var(--ease-out)] active:scale-[0.97] motion-reduce:transition-none motion-reduce:active:scale-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset"
       >
-        <StatusIcon className="h-3.5 w-3.5" aria-hidden="true" />
-        <span className="hidden text-xs font-medium sm:inline">{statusLabel}</span>
-        <span className="sr-only">{statusLabel}</span>
-      </div>
-    </Link>
+        {/* Type icon */}
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10">
+          <TypeIcon className="h-5 w-5 text-primary" aria-hidden="true" />
+        </div>
+
+        {/* Content */}
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-semibold leading-snug text-primary-ink">
+            {title}
+          </p>
+          <p className="mt-0.5 truncate text-xs text-muted">
+            {memberName} · {typeLabel} · {displayDate}
+          </p>
+        </div>
+
+        {/* Status: icon + label; label hidden on xs, always readable via sr-only + title */}
+        <div
+          className={cn("flex shrink-0 items-center gap-1", statusColor)}
+          title={statusLabel}
+        >
+          <StatusIcon className="h-3.5 w-3.5" aria-hidden="true" />
+          <span className="hidden text-xs font-medium sm:inline">{statusLabel}</span>
+          <span className="sr-only">{statusLabel}</span>
+        </div>
+      </Link>
+    </Card>
   );
 }
