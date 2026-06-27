@@ -44,7 +44,7 @@ export default async function MarketingLayout({ children }: { children: ReactNod
             </Link>
             <Link
               href="/login"
-              className="rounded-md bg-accent px-4 py-2 text-sm font-semibold text-ink shadow-sm transition-[transform,filter] duration-150 ease-[var(--ease-out)] hover:brightness-95 active:scale-[0.97] motion-reduce:transition-none motion-reduce:active:scale-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+              className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition-[transform,filter] duration-150 ease-[var(--ease-out)] hover:brightness-95 active:scale-[0.97] motion-reduce:transition-none motion-reduce:active:scale-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
             >
               {t(locale, "landing.nav.get_started")}
             </Link>
