@@ -15,11 +15,9 @@ import {
   FileClock,
   DownloadCloud,
   Check,
-  CheckCircle2,
-  AlertTriangle,
 } from "lucide-react";
 import { t, type Locale } from "@sehatvault/i18n";
-import { Section, GradientField, Card, cn } from "@sehatvault/ui";
+import { Section, GradientField, Card, HeroMedia, cn } from "@sehatvault/ui";
 import { Reveal } from "@sehatvault/ui/motion";
 import { getMarketingLocale } from "@/lib/marketing-locale";
 
@@ -87,108 +85,18 @@ function Hero({ locale }: { locale: Locale }) {
         </div>
 
         <Reveal delay={120} className="flex justify-center lg:justify-end">
-          <PhoneMockup />
+          <figure className="relative w-full max-w-[480px] overflow-hidden rounded-3xl border border-border bg-surface p-2 shadow-[0_24px_60px_-20px_color-mix(in_srgb,var(--color-primary)_30%,transparent)]">
+            <HeroMedia
+              poster="/hero/hero-poster.jpg"
+              src="/hero/hero-loop.mp4"
+              srcWebm="/hero/hero-loop.webm"
+              alt={t(locale, "landing.hero.media_alt")}
+              className="aspect-[3/2] w-full overflow-hidden rounded-2xl"
+            />
+          </figure>
         </Reveal>
       </div>
     </Section>
-  );
-}
-
-/* CSS device mockup — the single hero focal point. */
-function PhoneMockup() {
-  return (
-    <div className="relative w-[280px] rounded-[2.25rem] border border-border bg-surface p-3 shadow-[0_24px_60px_-20px_color-mix(in_srgb,var(--color-primary)_35%,transparent)]">
-      <div className="overflow-hidden rounded-[1.75rem] bg-bg">
-        {/* status bar */}
-        <div className="flex items-center justify-between px-5 pt-4 text-[10px] font-medium text-muted">
-          <span>9:41</span>
-          <span className="flex items-center gap-1">
-            <ShieldCheck className="h-3 w-3 text-primary" /> Secure
-          </span>
-        </div>
-        {/* member chip */}
-        <div className="px-4 pt-4">
-          <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1.5">
-            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-[11px] font-semibold text-white">
-              A
-            </span>
-            <span className="text-sm font-semibold text-primary-ink">Amma</span>
-          </div>
-        </div>
-        {/* timeline cards */}
-        <div className="space-y-2.5 p-4">
-          <MiniRecord
-            icon={FileText}
-            title="HbA1c — Lab report"
-            date="12 Jun"
-            status="normal"
-          />
-          <MiniRecord
-            icon={FileText}
-            title="Blood pressure log"
-            date="08 Jun"
-            status="watch"
-          />
-          <MiniRecord
-            icon={FileText}
-            title="Thyroid prescription"
-            date="02 Jun"
-          />
-          {/* mini trend */}
-          <div className="rounded-xl border border-border bg-surface p-3">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-ink">HbA1c trend</span>
-              <span className="text-[10px] font-medium text-success">
-                improving
-              </span>
-            </div>
-            <div className="mt-2 flex h-10 items-end gap-1.5">
-              {[60, 75, 55, 45, 50, 38].map((h, i) => (
-                <span
-                  key={i}
-                  className="flex-1 rounded-sm bg-primary/70"
-                  style={{ height: `${h}%` }}
-                />
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function MiniRecord({
-  icon: Icon,
-  title,
-  date,
-  status,
-}: {
-  icon: typeof FileText;
-  title: string;
-  date: string;
-  status?: "normal" | "watch";
-}) {
-  return (
-    <div className="flex items-center gap-3 rounded-xl border border-border bg-surface p-3">
-      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-        <Icon className="h-4 w-4" />
-      </span>
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-xs font-semibold text-ink">{title}</p>
-        <p className="text-[10px] text-muted">{date}</p>
-      </div>
-      {status === "normal" && (
-        <span className="inline-flex items-center gap-1 rounded-full bg-success/10 px-2 py-0.5 text-[10px] font-medium text-success">
-          <CheckCircle2 className="h-3 w-3" /> normal
-        </span>
-      )}
-      {status === "watch" && (
-        <span className="inline-flex items-center gap-1 rounded-full bg-warn/10 px-2 py-0.5 text-[10px] font-medium text-warn">
-          <AlertTriangle className="h-3 w-3" /> watch
-        </span>
-      )}
-    </div>
   );
 }
 
