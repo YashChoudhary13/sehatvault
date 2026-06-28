@@ -258,5 +258,11 @@
   "trends.ref_range": "Ref range",
   "trends.flag.high": "Above range",
   "trends.flag.low": "Below range",
-  "trends.flag.normal": "Normal"
+  "trends.flag.normal": "Normal",
+  "records.processing.pending": "Queued — AI will read your document shortly.",
+  "records.processing.processing": "Reading your document — this takes a moment.",
+  "records.processing.needs_review": "AI needs your help — please review the extracted details.",
+  "records.processing.failed": "Extraction failed. You can re-extract or add details manually.",
+  "records.review.summary_label": "AI Summary",
+  "records.review.disclaimer_note": "Not medical advice. Always consult your doctor."
 }

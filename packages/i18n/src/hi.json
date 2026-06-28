@@ -258,5 +258,11 @@
   "trends.ref_range": "सामान्य सीमा",
   "trends.flag.high": "सीमा से अधिक",
   "trends.flag.low": "सीमा से कम",
-  "trends.flag.normal": "सामान्य"
+  "trends.flag.normal": "सामान्य",
+  "records.processing.pending": "कतार में है — AI जल्द ही आपका दस्तावेज़ पढ़ेगा।",
+  "records.processing.processing": "दस्तावेज़ पढ़ा जा रहा है — इसमें थोड़ा समय लगेगा।",
+  "records.processing.needs_review": "AI को आपकी मदद चाहिए — कृपया निकाली गई जानकारी की समीक्षा करें।",
+  "records.processing.failed": "निष्कर्षण विफल हो गया। आप पुनः निकाल सकते हैं या जानकारी मैन्युअल रूप से जोड़ सकते हैं।",
+  "records.review.summary_label": "AI सारांश",
+  "records.review.disclaimer_note": "यह चिकित्सा सलाह नहीं है। हमेशा अपने डॉक्टर से परामर्श करें।"
 }
