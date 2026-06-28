@@ -3,13 +3,15 @@
 > **Status:** approved-in-brainstorm 2026-06-28 · **Milestone:** M2 (AI auto-organise) · **Provider:** FreeLLMAPI (demo)
 > **Authority:** extends `docs/database/Schema.md`, `docs/api/API-Spec.md`. ADRs: 004 (no Redis), 008 (async), 011 (embeddings day 1), 020 (notifications).
 
-## 0. Posture — DEMO
+## 0. Posture — DEMO (real, working — NOT mocked)
 
-This is a **demo** build. The LLM provider is **FreeLLMAPI** (a local, self-hosted, OpenAI-compatible proxy aggregating free provider tiers) running at `http://localhost:3001/v1`. Free models route through third-party providers and degrade late-day.
+This is a **real, fully-functional build** for a trusted small test group (professor, recruiters, early reviewers). Every stage genuinely works on real documents. "Demo" constrains exactly three things; it does **not** mean stubbed or fake functionality:
 
-- **Feed it synthetic / de-identified documents only.** No real patient PHI until the production model + zero-retention/DPA review (T5) is done.
-- Model choice is revisited before real public use (user decision, 2026-06-28).
-- Worker deploy to Render is **deferred**; Sprint 7 runs worker + proxy locally.
+1. **Synthetic / de-identified test documents only** — a data rule, not a feature rule. The pipeline works identically on real docs; we just don't route strangers' real PHI through free third-party models before the zero-retention/DPA review (T5).
+2. **A weaker/cheaper LLM is acceptable** — quality "good enough to impress," not production-perfect. Provider is swappable in one file.
+3. **Local hosting** — worker + app run locally during the demo period; Render deploy deferred (not cut).
+
+All functionality (extraction, classify, normalise, trends, embeddings, summary, RLS, realtime UI) is the real implementation. The only "stub" is a transient build-order scaffold (§10 steps 1–2), removed at step 3.
 
 ## 1. Goal & exit criteria
 
@@ -19,13 +21,14 @@ Upload a medical document → it is read, classified, normalised, embedded, summ
 
 ## 2. Provider integration
 
-- `services/ai/` uses the **`openai` Python SDK** against env `OPENAI_BASE_URL` (`http://localhost:3001/v1`) + `OPENAI_API_KEY` (`freellmapi-…`). Both env-only, never committed; added to `.env.example` by name.
-- Thin `app/llm.py` wrapper isolates the provider so swapping it later is one file.
-- **Models, env-pinned with `"auto"` fallback** (pinning = reproducible eval):
-  - `EXTRACTION_MODEL` — vision (e.g. Gemini 2.5 Flash / GPT-4o)
-  - `SUMMARY_MODEL` — text
-  - `EMBEDDING_MODEL` — multilingual (en + hi)
-- Vision uses OpenAI `image_url` content blocks (base64 data URIs); the proxy auto-restricts to vision-capable models when an image is present.
+- `services/ai/` uses the **`openai` Python SDK** against env `OPENAI_BASE_URL` + `OPENAI_API_KEY`. Both env-only, never committed; in `.env.example` by name. **The API key is left blank — user pastes the Gemini key later.**
+- Thin `app/llm.py` wrapper isolates the provider so swapping it is one file (no code change elsewhere).
+- **Default provider: Google Gemini** via its OpenAI-compatible endpoint (stronger, reliable free-tier vision, no late-day degradation):
+  - `OPENAI_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai/`
+  - `OPENAI_API_KEY=` (blank until pasted)
+  - `EXTRACTION_MODEL=gemini-2.5-flash` (vision) · `SUMMARY_MODEL=gemini-2.5-flash` · `EMBEDDING_MODEL=text-embedding-004` (multilingual, 768-dim)
+- **Fallback provider: FreeLLMAPI** (local OpenAI-compatible proxy at `http://localhost:3001/v1`, key `freellmapi-…`, models pinned or `"auto"`). 3-line env change to switch.
+- Vision uses OpenAI `image_url` content blocks (base64 data URIs).
 
 ## 3. Worker architecture (chosen: A — pgmq drain loop)
 
@@ -55,7 +58,7 @@ Rejected: B (pg_cron→HTTP, couples scheduling to DB; pg_cron reserved for M3 r
 
 - `enable extension pgvector` (guarded like pgmq for vanilla-PG/CI).
 - **`lab_value`** — `id, family_id, record_id→health_record, member_id, analyte, value numeric, unit, measured_at, ref_low, ref_high, flag`. Feeds trends.
-- **`record_embedding`** — `id, family_id, record_id, member_id, chunk text, embedding vector(N), created_at`.
+- **`record_embedding`** — `id, family_id, record_id, member_id, chunk text, embedding vector(768), created_at`. (768 = `text-embedding-004`; change if `EMBEDDING_MODEL` changes.)
 - **`medication`** — `id, family_id, member_id, record_id, name, dose, frequency, active bool, started_at`.
 
 **RLS (Dev Rule 2, non-negotiable, same PR):** every new table gets `family_id` denormalised + 4 policies via `auth_family_ids()` + `set_updated_at()` where applicable + an isolation test added to `supabase/tests/rls_isolation.test.sql` (family-B cannot read/write family-A). CI `db` job must stay green.
