@@ -15,11 +15,12 @@ class Database:
 
     async def read_jobs(self, n: int) -> list[dict]:
         rows = await self._pool.fetch(
-            "select msg_id, read_ct, message from pgmq.read($1, $2, $3)",
+            "select msg_id, read_ct, (message->>'record_id') as record_id "
+            "from pgmq.read($1, $2, $3)",
             "ai_jobs", settings.visibility_timeout_s, n,
         )
         return [
-            {"msg_id": r["msg_id"], "read_ct": r["read_ct"], "record_id": r["message"]["record_id"]}
+            {"msg_id": r["msg_id"], "read_ct": r["read_ct"], "record_id": r["record_id"]}
             for r in rows
         ]
 
