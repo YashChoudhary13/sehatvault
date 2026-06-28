@@ -1,4 +1,5 @@
 import json
+from pydantic import ValidationError
 from .. import llm
 from ..schemas import Extracted
 
@@ -30,4 +31,7 @@ async def run(images: list[str]) -> Extracted:
         data = json.loads(text[start:end + 1])
     except (ValueError, json.JSONDecodeError):
         return Extracted(type="other", confidence=0.0)
-    return Extracted(**{k: v for k, v in data.items() if k in Extracted.model_fields})
+    try:
+        return Extracted(**{k: v for k, v in data.items() if k in Extracted.model_fields})
+    except ValidationError:
+        return Extracted(type="other", confidence=0.0)
