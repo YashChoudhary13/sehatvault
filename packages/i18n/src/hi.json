@@ -251,5 +251,18 @@
   "landing.pricing.plus.badge": "अगला",
   "landing.cta.heading": "अपने परिवार के स्वास्थ्य रिकॉर्ड घर लाएं।",
   "landing.cta.description": "कुछ मिनटों में अपना निजी वॉल्ट सेट करें। मुफ़्त शुरुआत, कोई कार्ड नहीं।",
-  "landing.cta.button": "मुफ़्त शुरू करें"
+  "landing.cta.button": "मुफ़्त शुरू करें",
+  "trends.title": "लैब रुझान",
+  "trends.empty": "अभी कोई लैब मान दर्ज नहीं। रुझान देखने के लिए लैब रिपोर्ट अपलोड करें।",
+  "trends.no_member": "सदस्य नहीं मिला।",
+  "trends.ref_range": "सामान्य सीमा",
+  "trends.flag.high": "सीमा से अधिक",
+  "trends.flag.low": "सीमा से कम",
+  "trends.flag.normal": "सामान्य",
+  "records.processing.pending": "कतार में है — AI जल्द ही आपका दस्तावेज़ पढ़ेगा।",
+  "records.processing.processing": "दस्तावेज़ पढ़ा जा रहा है — इसमें थोड़ा समय लगेगा।",
+  "records.processing.needs_review": "AI को आपकी मदद चाहिए — कृपया निकाली गई जानकारी की समीक्षा करें।",
+  "records.processing.failed": "निष्कर्षण विफल हो गया। आप पुनः निकाल सकते हैं या जानकारी मैन्युअल रूप से जोड़ सकते हैं।",
+  "records.review.summary_label": "AI सारांश",
+  "records.review.disclaimer_note": "यह चिकित्सा सलाह नहीं है। हमेशा अपने डॉक्टर से परामर्श करें।"
 }

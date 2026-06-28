@@ -84,6 +84,18 @@ select set_config('test.member_b', (select mp.id::text
                                        join family f on f.id = mp.family_id
                                       where f.owner_user_id = :'user_b'), true);
 select set_config('test.family_b', (select id::text from family where owner_user_id = :'user_b'), true);
+\o
+
+-- lab_value / medication seed for A (record_embedding left empty; covered by read-deny)
+do $$
+declare rec_a uuid; mem_a uuid; fam_a uuid := current_setting('test.family_a')::uuid;
+begin
+  select id, member_id into rec_a, mem_a from health_record where family_id = fam_a limit 1;
+  insert into lab_value (family_id, record_id, member_id, analyte, value, unit, measured_at)
+    values (fam_a, rec_a, mem_a, 'hba1c', 7.2, '%', '2026-06-01');
+  insert into medication (family_id, member_id, record_id, name, dose, frequency)
+    values (fam_a, mem_a, rec_a, 'Metformin', '500mg', 'BD');
+end$$;
 
 -- ── Impersonate family-B ────────────────────────────────────────────────────────────────
 select set_config('request.jwt.claims',
@@ -273,6 +285,15 @@ begin
   perform public.assert_rls(n = 1, 'B should be able to insert a health_record into its own family');
 end$$;
 
+-- ── lab_value / medication / record_embedding: READ isolation (B cannot read A's rows) ──
+do $$
+declare n int;
+begin
+  select count(*) into n from lab_value;        perform public.assert_rls(n = 0, 'B cannot read A lab_value');
+  select count(*) into n from medication;       perform public.assert_rls(n = 0, 'B cannot read A medication');
+  select count(*) into n from record_embedding; perform public.assert_rls(n = 0, 'B cannot read A record_embedding');
+end$$;
+
 -- ── storage.objects: READ isolation + positive controls ────────────────────────────────
 do $$
 declare
@@ -357,6 +378,9 @@ begin
   select count(*) into n from member_profile; perform public.assert_rls(n = 0, 'no identity ⇒ 0 member rows (default deny)');
   select count(*) into n from app_user;       perform public.assert_rls(n = 0, 'no identity ⇒ 0 app_user rows (default deny)');
   select count(*) into n from health_record;  perform public.assert_rls(n = 0, 'no identity ⇒ 0 health_record rows (default deny)');
+  select count(*) into n from lab_value;        perform public.assert_rls(n = 0, 'no identity ⇒ 0 lab_value rows (default deny)');
+  select count(*) into n from medication;       perform public.assert_rls(n = 0, 'no identity ⇒ 0 medication rows (default deny)');
+  select count(*) into n from record_embedding; perform public.assert_rls(n = 0, 'no identity ⇒ 0 record_embedding rows (default deny)');
   select count(*) into n from storage.objects where bucket_id = 'documents';
   perform public.assert_rls(n = 0, 'no identity ⇒ 0 storage objects (default deny)');
 end$$;
@@ -383,6 +407,16 @@ begin
   perform public.assert_rls(n = 1, 'A''s storage object must be intact after B''s attacks');
 end$$;
 
+-- A's lab_value and medication must survive B's attacks.
+do $$
+declare n int; fam_a uuid := current_setting('test.family_a')::uuid;
+begin
+  select count(*) into n from lab_value  where family_id = fam_a and analyte = 'hba1c';
+  perform public.assert_rls(n = 1, 'A''s lab_value must be intact after B''s attacks');
+  select count(*) into n from medication where family_id = fam_a and name = 'Metformin';
+  perform public.assert_rls(n = 1, 'A''s medication must be intact after B''s attacks');
+end$$;
+
 -- Function-grant hardening (migration 0003): the SECURITY DEFINER helpers must not be
 -- needlessly callable via the PostgREST RPC surface. handle_new_user is trigger-only;
 -- auth_family_ids is RLS-only and must stay executable by authenticated but not anon.
@@ -401,6 +435,8 @@ end$$;
 \echo '✓ RLS isolation: family-B cannot read or write family-A across app_user/family/member_profile'
 \echo '✓ RLS isolation: family-B cannot read or write family-A''s health_record (0004)'
 \echo '✓ RLS isolation: family-B cannot read or write family-A''s documents bucket objects (0004)'
+\echo '✓ RLS isolation: family-B cannot read family-A''s lab_value/medication/record_embedding (0006)'
+\echo '✓ A''s lab_value (hba1c) and medication (Metformin) intact after B''s attacks (0006)'
 \echo '✓ app_lock_hash: B can set own PIN hash; cannot overwrite A''s'
 \echo '✓ function-grant hardening (0003): RPC surface locked down on SECURITY DEFINER helpers'
 

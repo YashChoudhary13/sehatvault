@@ -137,7 +137,25 @@ create index on health_record(member_id, record_date desc);
 create index on health_record(family_id);
 create index on health_record(ocr_status) where ocr_status in ('pending','processing','needs_review');
 
--- 4.5 lab_catalog : canonical lab dictionary (reference data; no family_id)
+-- 4.5 lab_value : typed analyte rows extracted by the AI pipeline (feeds trend charts)
+-- Built in 0006_ai_pipeline.sql (M2). Each row is one analyte from one health_record.
+create table lab_value (
+  id          uuid primary key default gen_random_uuid(),
+  family_id   uuid not null references family(id) on delete cascade,
+  record_id   uuid not null references health_record(id) on delete cascade,
+  member_id   uuid not null references member_profile(id) on delete cascade,
+  analyte     text not null,        -- canonical key e.g. 'hba1c'
+  value       numeric not null,
+  unit        text,
+  measured_at date,
+  ref_low     numeric,
+  ref_high    numeric,
+  flag        text,                 -- 'low' | 'high' | 'normal' | null
+  created_at  timestamptz not null default now()
+);
+-- Indexes: (member_id, analyte, measured_at) for trend queries; family_id; record_id.
+
+-- 4.5b lab_catalog : canonical lab dictionary (reference data; no family_id)
 create table lab_catalog (
   id           uuid primary key default gen_random_uuid(),
   canonical_name text not null unique,      -- 'HbA1c'
@@ -169,23 +187,23 @@ create table observation (
 create index on observation(member_id, canonical_name, observed_at);  -- trend queries
 
 -- 4.7 medication (FHIR MedicationStatement)
+-- M2 build (0006_ai_pipeline.sql) uses a streamlined schema matching the AI pydantic shape.
+-- The richer fields (generic_name, strength, duration, confidence) are Phase-2 additions.
 create table medication (
-  id          uuid primary key default gen_random_uuid(),
-  member_id   uuid not null references member_profile(id) on delete cascade,
-  family_id   uuid not null references family(id) on delete cascade,
-  record_id   uuid references health_record(id) on delete set null,
-  drug_name   text not null,
-  generic_name text,
-  strength    text,                          -- '500 mg'
-  frequency   text,                          -- 'BD' / 'twice daily'
-  duration    text,                          -- '30 days'
-  start_date  date, end_date date,
-  active      boolean not null default true,
-  confidence  numeric,
-  created_at  timestamptz not null default now(),
-  updated_at  timestamptz not null default now()
+  id         uuid primary key default gen_random_uuid(),
+  family_id  uuid not null references family(id) on delete cascade,
+  member_id  uuid not null references member_profile(id) on delete cascade,
+  record_id  uuid references health_record(id) on delete set null,
+  name       text not null,
+  dose       text,
+  frequency  text,
+  active     boolean not null default true,
+  started_at date,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
 );
-create index on medication(member_id, active);
+create index on medication(member_id) where active;
+create index on medication(family_id);
 
 -- 4.8 condition / immunization (light)
 create table condition (
@@ -250,16 +268,18 @@ create index on access_log(family_id, at desc);
 create index on access_log(share_grant_id);
 
 -- 4.12 record_embedding : RAG (pgvector)
+-- Built in 0006_ai_pipeline.sql (M2). vector(768) = text-embedding-004 (ADR-011).
 create table record_embedding (
   id         uuid primary key default gen_random_uuid(),
+  family_id  uuid not null references family(id) on delete cascade,
   record_id  uuid not null references health_record(id) on delete cascade,
   member_id  uuid not null references member_profile(id) on delete cascade,
-  family_id  uuid not null references family(id) on delete cascade,
   chunk      text not null,
-  embedding  vector(1024),                    -- dim per chosen embedding model
+  embedding  vector(768),                     -- text-embedding-004; 768-dim
   created_at timestamptz not null default now()
 );
-create index on record_embedding using hnsw (embedding vector_cosine_ops);
+create index on record_embedding(record_id);
+create index on record_embedding(family_id);
 
 -- 4.13 subscription : stub (only used when billing/Should ships)
 create table subscription (

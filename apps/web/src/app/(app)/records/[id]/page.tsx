@@ -13,18 +13,11 @@ import {
 import { createClient } from "@/lib/supabase/server";
 import { t, type Locale } from "@sehatvault/i18n";
 import { Button } from "@/components/ui/button";
-import { DocumentPreview, ReExtractButton } from "./_record-client";
+import { RecordDetailClient } from "./_record-client";
 import { DeleteRecordButton } from "@/components/delete-record-button";
+import type { RecordRow } from "@/components/records/use-record-realtime";
 
-type RecordRow = {
-  id: string;
-  title: string | null;
-  type: string;
-  ocr_status: string;
-  record_date: string | null;
-  file_object_key: string | null;
-  created_at: string;
-  member_id: string;
+type PageRecord = RecordRow & {
   member_profile: { display_name: string } | null;
 };
 
@@ -64,7 +57,7 @@ export default async function RecordDetailPage({
     supabase
       .from("health_record")
       .select(
-        "id, title, type, ocr_status, record_date, file_object_key, created_at, member_id, member_profile(display_name)",
+        "id, title, type, ocr_status, record_date, file_object_key, created_at, member_id, summary, summary_hi, facility, doctor, member_profile(display_name)",
       )
       .eq("id", id)
       .single(),
@@ -73,7 +66,7 @@ export default async function RecordDetailPage({
   if (!record) notFound();
 
   const locale: Locale = appUser?.locale === "hi" ? "hi" : "en";
-  const rec = record as unknown as RecordRow;
+  const rec = record as unknown as PageRecord;
 
   const title =
     rec.title ??
@@ -92,6 +85,22 @@ export default async function RecordDetailPage({
       )
     : "—";
 
+  // Build the initial RecordRow passed to the client component (no member_profile).
+  const initialRow: RecordRow = {
+    id: rec.id,
+    title: rec.title,
+    type: rec.type,
+    ocr_status: rec.ocr_status,
+    record_date: rec.record_date,
+    file_object_key: rec.file_object_key,
+    created_at: rec.created_at,
+    member_id: rec.member_id,
+    summary: rec.summary,
+    summary_hi: rec.summary_hi,
+    facility: rec.facility,
+    doctor: rec.doctor,
+  };
+
   return (
     <main className="mx-auto max-w-2xl p-6">
       {/* Header */}
@@ -100,18 +109,11 @@ export default async function RecordDetailPage({
           <p className="mb-1 text-xs text-muted">{memberName}</p>
           <h1 className="text-2xl font-bold text-primary-ink">{title}</h1>
         </div>
-        <div className="flex shrink-0 gap-2">
-          <Button variant="outline" asChild>
-            <Link href={`/records/${rec.id}/edit`}>
-              {t(locale, "records.action.edit_record")}
-            </Link>
-          </Button>
-          <ReExtractButton
-            recordId={rec.id}
-            ocrStatus={rec.ocr_status}
-            locale={locale}
-          />
-        </div>
+        <Button variant="outline" asChild>
+          <Link href={`/records/${rec.id}/edit`}>
+            {t(locale, "records.action.edit_record")}
+          </Link>
+        </Button>
       </div>
 
       {/* Meta row */}
@@ -145,15 +147,9 @@ export default async function RecordDetailPage({
         </div>
       </div>
 
-      {/* Document preview or empty state */}
-      {rec.file_object_key ? (
-        <DocumentPreview recordId={rec.id} locale={locale} />
-      ) : (
-        <div className="flex flex-col items-center justify-center py-16 text-muted">
-          <FileText className="mb-3 h-10 w-10" />
-          <p className="text-sm">{t(locale, "records.detail.no_document")}</p>
-        </div>
-      )}
+      {/* Live status-aware content — pending/processing/failed/done/needs_review */}
+      <RecordDetailClient initial={initialRow} locale={locale} />
+
       {/* Danger Zone */}
       <div className="mt-10 rounded-xl border border-danger/30 bg-danger/5 p-5">
         <h2 className="mb-1 text-sm font-semibold text-danger">{t(locale, "records.danger_zone")}</h2>

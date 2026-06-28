@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Loader2, FileText } from "lucide-react";
+import { Loader2, FileText, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { t, type Locale } from "@sehatvault/i18n";
+import { useRecordRealtime, type RecordRow } from "@/components/records/use-record-realtime";
+import { ProcessingCard } from "@/components/records/processing-card";
 
 // ── DocumentPreview ──────────────────────────────────────────────────────────
 
@@ -135,5 +137,95 @@ export function ReExtractButton({
         ? t(locale, "records.detail.processing")
         : t(locale, "records.detail.re_extract")}
     </Button>
+  );
+}
+
+// ── RecordDetailClient ───────────────────────────────────────────────────────
+// Subscribes to live ocr_status updates and renders the appropriate content
+// section: ProcessingCard (pending/processing), error card + retry (failed),
+// or the document preview + AI summary (done / needs_review / manual).
+
+interface RecordDetailClientProps {
+  initial: RecordRow;
+  locale: Locale;
+}
+
+export function RecordDetailClient({
+  initial,
+  locale,
+}: RecordDetailClientProps) {
+  const row = useRecordRealtime(initial.id, initial);
+  const { ocr_status } = row;
+
+  if (ocr_status === "pending" || ocr_status === "processing") {
+    return (
+      <div className="py-4">
+        <ProcessingCard status={ocr_status} locale={locale} />
+      </div>
+    );
+  }
+
+  if (ocr_status === "failed") {
+    return (
+      <div className="space-y-4 py-4">
+        <ProcessingCard status="failed" locale={locale} />
+        <div className="flex justify-end">
+          <ReExtractButton
+            recordId={row.id}
+            ocrStatus={row.ocr_status}
+            locale={locale}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  // done, needs_review, or manual — render document + optional AI summary
+  return (
+    <div className="space-y-6">
+      {ocr_status === "needs_review" && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-3 rounded-xl border border-[var(--color-warn)]/30 bg-[var(--color-warn)]/10 p-4">
+            <AlertTriangle
+              className="h-5 w-5 shrink-0 text-[var(--color-warn)]"
+              aria-hidden="true"
+            />
+            <p className="text-sm font-medium text-[var(--color-warn)]">
+              {t(locale, "records.processing.needs_review")}
+            </p>
+          </div>
+          <div className="flex justify-end">
+            <ReExtractButton
+              recordId={row.id}
+              ocrStatus={row.ocr_status}
+              locale={locale}
+            />
+          </div>
+        </div>
+      )}
+
+      {row.file_object_key ? (
+        <DocumentPreview recordId={row.id} locale={locale} />
+      ) : (
+        <div className="flex flex-col items-center justify-center py-16 text-[var(--color-muted)]">
+          <FileText className="mb-3 h-10 w-10" aria-hidden="true" />
+          <p className="text-sm">{t(locale, "records.detail.no_document")}</p>
+        </div>
+      )}
+
+      {row.summary && (
+        <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-tint)]/40 p-4">
+          <h2 className="mb-2 text-sm font-semibold text-[var(--color-ink)]">
+            {t(locale, "records.review.summary_label")}
+          </h2>
+          <p className="text-sm text-[var(--color-ink)]">
+            {locale === "hi" && row.summary_hi ? row.summary_hi : row.summary}
+          </p>
+          <p className="mt-3 text-xs text-[var(--color-muted)]">
+            {t(locale, "records.review.disclaimer_note")}
+          </p>
+        </div>
+      )}
+    </div>
   );
 }

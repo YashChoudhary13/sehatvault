@@ -1,0 +1,3 @@
+{"file": "lab01.pdf", "lab_values": [{"analyte": "hba1c", "value": 7.2}, {"analyte": "fasting_glucose", "value": 118.0}]}
+{"file": "lab02.pdf", "lab_values": [{"analyte": "tsh", "value": 3.8}, {"analyte": "hemoglobin", "value": 11.5}]}
+{"file": "lab03.pdf", "lab_values": [{"analyte": "creatinine", "value": 0.9}, {"analyte": "hba1c", "value": 6.1}]}

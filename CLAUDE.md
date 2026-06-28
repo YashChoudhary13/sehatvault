@@ -60,7 +60,7 @@
 | Auth | **Supabase Auth — Email OTP** (canonical) + app-lock PIN | No SMS OTP at MVP; DLT deferred (ADR-019) |
 | Notifications | **`NotificationProvider`** interface — Mock (in-app, default) + Telegram (opt-in) | SMS/WhatsApp = future providers (ADR-020) |
 | Storage | **Supabase Storage** private bucket (`ap-south-1`) | AES-256 at rest; short-lived signed URLs only |
-| LLM | **Claude** (vision for extraction, text for Q&A) | Smaller model for high-volume extraction; larger for RAG |
+| LLM (M2 worker) | **OpenAI-compatible SDK → Google Gemini** (`gemini-2.5-flash` vision+summary; `text-embedding-004` 768-dim) | Default provider for extraction/summary/embed; key blank until wired; isolated in `services/ai/app/llm.py` (one-file swap); Claude/any OpenAI-compatible endpoint also works — ADR-023. Claude is still the intended provider for RAG Q&A (Should). |
 | Embeddings | Multilingual model → **pgvector** | Written from Day 1; Q&A UI ships as Should (ADR-011) |
 | i18n | `@sehatvault/i18n` package | en + hi at MVP; elder mode; Bhashini = Phase 2 |
 | Payments | **Razorpay — test mode only** (UPI + cards + international) | Should-have; production KYC + live keys are future, not a blocker (ADR-017) |
@@ -197,7 +197,7 @@ sehatvault/
 
 ## Important Design Decisions
 
-Full ADR list: see `docs/Decisions.md` (canonical, ADR-001..022). Key decisions:
+Full ADR list: see `docs/Decisions.md` (canonical, ADR-001..023). Key decisions:
 - **ADR-001:** Web-first PWA; no native mobile at MVP
 - **ADR-002:** No NestJS gateway; Next.js + Supabase is the backend
 - **ADR-004:** No Redis; pgmq + pg_cron instead
@@ -209,12 +209,13 @@ Full ADR list: see `docs/Decisions.md` (canonical, ADR-001..022). Key decisions:
 - **ADR-020:** Pluggable `NotificationProvider` — Mock (in-app) + Telegram (opt-in) at MVP; SMS/WhatsApp future (**supersedes ADR-014**)
 - **ADR-021:** Sequential migration naming (`0001`, `0002`, …), not timestamps; remote needs a one-time repair
 - **ADR-022:** Calm Indigo palette + 3 motion tiers + `@sehatvault/ui` primitives; Warm Trust name retired; dark mode token-ready but deferred
+- **ADR-023:** M2 AI worker uses OpenAI-compatible SDK; default provider Google Gemini (`gemini-2.5-flash` + `text-embedding-004`); key blank; provider isolated in `services/ai/app/llm.py`
 
 ---
 
 ## Current Implementation Status
 
-**As of 2026-06-28 — M0 + M1 (Manual Vault) COMPLETE & pixel-verified; Calm Indigo design overhaul COMPLETE; hero loop video wired — all merged to `main` (latest `4c1a958`, PR #4). Supabase prod in sync (`0001`–`0005` applied). `main` CI green. Next: Sprint 7 — AI Pipeline (M2).**
+**As of 2026-06-28 — M0 + M1 (Manual Vault) + Calm Indigo design overhaul + hero video all merged to `main`. Sprint 7 (M2 AI Pipeline) COMPLETE on branch `feat/m2-ai-pipeline` (pending merge after live verification + prod migration `0006`). Supabase prod in sync (`0001`–`0005` applied; `0006` pending). `main` CI green. Next: wire Gemini key → live-verify → merge → M3 Sprints 11–13 (doctor share, reminders, consent).**
 
 > **Routing note (2026-06-26):** `/` is now the **public marketing landing** (`app/(marketing)/`). The authenticated dashboard moved to **`/home`** (`app/(app)/home/page.tsx`); the old `(app)/page.tsx` was deleted (two route groups cannot both own `/`). Middleware makes `/` public, returns **401 JSON for unauthenticated `/api/**`** (page routes still redirect to `/login`), and sends post-login to `/home`.
 
@@ -225,9 +226,9 @@ Full ADR list: see `docs/Decisions.md` (canonical, ADR-001..022). Key decisions:
 - ✅ `apps/web`: Next.js 15 PWA with Warm-Trust themed UI — **build green**
 - ✅ **Public marketing landing** at `/` (`app/(marketing)/{layout,page}.tsx` + `_components/reveal.tsx`): hero w/ CSS device mockup, problem, how-it-works, feature bento, privacy, pricing, final CTA — Calm Indigo tokens, Lucide icons, scroll-reveal (IntersectionObserver + reduced-motion + fallback safety net). Desktop + mobile verified via agent-browser. **Copy is inline English — not yet through `t()`/i18n (follow-up).**
 - ✅ `packages/config`: tsconfig.base, ESLint 9 flat config, Prettier, `theme.css` (Calm Indigo design tokens)
-- ✅ `packages/core`: `appVersion()` + `isNonEmptyName()` + `validatePin()` + `InsertMemberSchema` + `InsertRecordSchema` — Vitest green (19 tests)
+- ✅ `packages/core`: `appVersion()` + `isNonEmptyName()` + `validatePin()` + `InsertMemberSchema` + `InsertRecordSchema` + `lab.ts` (canonical analyte/unit normalisation) — Vitest green (54 tests)
 - ✅ `packages/i18n`: en/hi catalogs with `t()` helper; `auth.login.*`, `pin.*`, `nav.*`, `members.*`, `records.upload.*`, `records.detail.*`, `records.action.*` keys
-- ✅ `supabase/migrations/0001_init.sql` → `0005_fix_trigger_policy_names.sql` — **all applied to prod**
+- ✅ `supabase/migrations/0001_init.sql` → `0005_fix_trigger_policy_names.sql` — **all applied to prod**; `0006_ai_pipeline.sql` built (pending prod push)
 - ✅ `supabase/config.toml` + `seed/seed.sql`
 - ✅ `.github/workflows/ci.yml`: lint + typecheck + unit tests + build + RLS isolation gate (PG17 ephemeral)
 - ✅ RLS isolation test suite: `supabase/tests/` — auth stub + `rls_isolation.test.sql`; `run-rls-tests.sh`
@@ -254,14 +255,23 @@ Full ADR list: see `docs/Decisions.md` (canonical, ADR-001..022). Key decisions:
 - ✅ `DeleteRecordButton` client component: AlertDialog; best-effort storage cleanup on delete
 - ✅ `/records/[id]/edit` page + `updateRecord` Server Action (`app/(app)/records/[id]/edit/page.tsx` + `app/actions/record-edit.ts`) — pre-fills `RecordForm` via `initialData` (⚠️ edit flow not yet pixel-verified end-to-end)
 - ✅ Authenticated dashboard at **`/home`** (`app/(app)/home/page.tsx`); nav, login redirect, and member actions all point to `/home`
+- ✅ **Python AI worker** (`services/ai/`) — FastAPI + asyncio pgmq drain loop; stateless; six pipeline stages: preprocess, extract (vision LLM → strict Pydantic JSON), classify, normalise, embed (pgvector 768-dim), summarise (en+hi + "not medical advice" disclaimer)
+- ✅ **Provider isolation** (`services/ai/app/llm.py`) — OpenAI-compatible SDK; default provider Google Gemini (`gemini-2.5-flash` + `text-embedding-004`); key blank until wired; ADR-023
+- ✅ **`POST /api/ai/callback`** (`apps/web/src/app/api/ai/callback/route.ts`) — HMAC-verified (`X-Signature: sha256=<hex>`), zod-validated, service-role writes, idempotent on `record_id` (delete-then-insert child rows; `family_id`/`member_id` derived server-side)
+- ✅ **Realtime UI** — `useRecordRealtime` hook (Supabase Realtime + 4s poll fallback) + `ProcessingCard` (pending/processing/failed states) + needs_review banner + re-extract button; Calm Indigo tokens, en+hi (⚠️ pixel-verification deferred — needs live worker + Gemini key)
+- ✅ **Member trend chart** — `/members/[id]/trends`; dependency-free accessible SVG per analyte; ref-range band; icon+label status; sr-only table fallback (⚠️ pixel-verification deferred)
+- ✅ **Eval harness** — `services/ai/eval/` (`run_eval.py`, `score.py`, `golden.jsonl`, `README.md`); 10 synthetic de-identified golden records; ≥90% field-accuracy target; run manually once a key is set
+- ✅ `lab_value`, `record_embedding` (vector(768)), `medication` tables (migration `0006`) — each with 4 RLS policies + `check_phi_family()` trigger; `health_record` added to Realtime publication
+- ✅ Python test suite: 24 tests passing (classify/callback/extract/normalise/summarise/eval-scoring)
 
 ### What does NOT exist yet
 - ❌ Audit log on delete (`audit_log` table not in schema yet)
 - ❌ Marketing/landing i18n — landing copy is inline English; no `t()` keys or marketing language toggle yet
 - ❌ Public doctor-share view (`app/s/[token]/`) — Sprints 11–13
-- ❌ AI pipeline (`services/ai/` — entire directory) — Sprint 7
 - ❌ Doctor share, reminders, consent dashboard — Sprints 11–16
 - ❌ `packages/db` (generated Supabase types) — add after schema stabilises
+- ❌ Render prod deploy of AI worker — deferred until Gemini key wired + DPA review before real PHI
+- ❌ Live pixel-verification of `ProcessingCard` + trend chart — deferred (needs worker + key + running dev server)
 - ✅ `packages/ui` (`@sehatvault/ui`) — now populated: motion primitives (`Reveal`, `PageTransition`, `MotionTierBox`, `useMotionTier`) + component primitives (`Card`, `Button`, `EmptyState`, `Section`, `GradientField`, `HeroMedia`, `cn`)
 - ✅ **Browser/E2E verification unblocked** — `agent-browser` (v0.31) is installed; drive it to screenshot + click-test flows (`agent-browser open <url>` → `screenshot --full --screenshot-dir .` → `set viewport <w> <h>` for mobile). Chrome-devtools MCP still unavailable.
 
@@ -273,7 +283,7 @@ Full ADR list: see `docs/Decisions.md` (canonical, ADR-001..022). Key decisions:
 |-----------|--------|-----------|
 | M0 — Foundations & guardrails | ✅ Done | 1–2 partial |
 | **M1 — Manual vault** | ✅ Done (Sprints 2–6 complete; pixel-verified) | 2–6 |
-| M2 — AI auto-organise | ⏳ Planned | 7–10 |
+| **M2 — AI auto-organise** | ⏳ Sprint 7 code-complete on `feat/m2-ai-pipeline`; pending live-verify + prod migration + merge | 7–10 |
 | M3 — Use & reach | ⏳ Planned | 11–13 |
 | M4 — Trust, billing & closed beta | ⏳ Planned | 14–16 |
 
@@ -282,9 +292,11 @@ Full ADR list: see `docs/Decisions.md` (canonical, ADR-001..022). Key decisions:
 **Sprint 4 (complete 2026-06-25):** ✅ migrations 0004 + 0005 (prod) · ✅ `health_record` table + enums + pgmq + RLS · ✅ `documents` bucket + storage RLS · ✅ `CaptureSheet` + `UploadSection` · ✅ `POST /api/ingest` · ✅ `GET /api/records/[id]/file` (60 s signed URL) · ✅ `DocumentPreview` + `ReExtractButton` · ✅ `/records/[id]` detail page · ✅ 25 new i18n keys.
 **Sprint 5 (complete, 2026-06-25 → edit 2026-06-26):** ✅ `InsertRecordSchema` in `packages/core` · ✅ `createRecord` + `deleteRecord` Server Actions · ✅ `RecordForm` + `DeleteRecordButton` client components · ✅ `/records/new` page · ✅ detail page wired with Delete + Edit link · ✅ 17 new i18n keys · ✅ `/records/[id]/edit` page + `updateRecord` action.
 **Marketing landing (2026-06-26):** ✅ Public `/` landing built to `Design-System.md` §6 (7 sections, Calm Indigo, scroll-reveal) · ✅ dashboard moved `/` → `/home` · ✅ desktop + mobile pixel-verified via agent-browser. ❌ landing i18n (inline English).
-**▶ Next session:** **Merge `feat/m1-manual-vault` → `main` (tag `v0.1`), then merge `feat/design-overhaul`, then Sprint 7 — AI Pipeline (M2).** Read order: this file → `docs/progress.md` (▶ RESUME HERE).
+**Sprint 7 (complete 2026-06-28):** ✅ `services/ai/` FastAPI worker (6 pipeline stages) · ✅ migration `0006` (3 new PHI tables + RLS) · ✅ `POST /api/ai/callback` (HMAC, zod, idempotent) · ✅ Realtime UI `ProcessingCard` + re-extract · ✅ `/members/[id]/trends` SVG chart · ✅ eval harness · ✅ 24 Python tests + 54 core tests green. ⚠️ Pixel-verify + Render deploy + prod `0006` migration pending.
+**▶ Next session:** Wire Gemini key → live-verify → apply `0006` to prod → merge `feat/m2-ai-pipeline` → `main` (tag `v0.2`) → M3 Sprints 11–13. Read order: this file → `docs/progress.md` (▶ RESUME HERE).
 
 **M1 exit gate:** Upload a 3-page PDF → stores securely, lists, opens via signed URL. Direct URL without auth → 403. Manual entry → structured record on timeline. Demo: "add family, upload a report, see it stored securely."
+**M2 exit gate (pending live-verify):** Snap a lab report → AI processes it → trend chart shows the value. Snap a prescription → medicine list populated. ProcessingCard shows real-time status transitions.
 
 ---
 
@@ -309,7 +321,7 @@ Full ADR list: see `docs/Decisions.md` (canonical, ADR-001..022). Key decisions:
 2. **RLS is non-negotiable.** Every new PHI table must have 4 RLS policies using `auth_family_ids()` AND a CI isolation test in the same PR — extend `supabase/tests/rls_isolation.test.sql` (the harness + auth stub already exist; the CI `db` job runs it). Verify locally with `supabase/tests/run-rls-tests.sh` against a disposable Postgres.
 3. **No secrets committed** — `.env.example` has names only. Real values live in Vercel / Render / Supabase env settings.
 4. **Service-role key = server/worker only.** Never `NEXT_PUBLIC_*`, never shipped to the browser.
-5. **Do not build the Python AI service before Sprint 7.** Building AI before the manual vault is the #1 delivery risk.
+5. **Do not build the Python AI service before Sprint 7.** Building AI before the manual vault is the #1 delivery risk. *(Sprint 7 is now complete — this rule is satisfied.)*
 6. **ABDM stays deferred** (ADR-013). Do not re-open before Phase 2.
 7. **Notifications use the `NotificationProvider` interface** (ADR-020): Mock (in-app, default) + Telegram (opt-in) at MVP; SMS/WhatsApp are future providers. **Auth is email OTP** (ADR-019) — do **not** implement SMS OTP or depend on DLT.
 8. **Migrations are forward-only and sequentially named** (`0001_`, `0002_`, … — ADR-021, not timestamps). Never edit an applied migration; add the next-numbered file.
