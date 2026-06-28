@@ -253,10 +253,11 @@ Every sprint below now carries an explicit **Design** step + this DoD.
 > **Sprint 7 COMPLETE** — see the completed-tasks table above. Remaining Sprints 8–10 items still to build:
 - ReviewCard (low-confidence correction UI) — full human-in-the-loop correction flow
 - `lab_catalog` seed + broader LOINC normalisation
-- Medicine reminder wiring (parsed meds → reminder creation)
+- **Medication extraction (NOT YET BUILT):** the `medication` table + RLS + callback insert path exist, but the extract prompt does not request drugs and the worker hardcodes `medications: []`. "Snap prescription → medicine list" needs the extract prompt extended to return medications + a `normalise`-style mapping. Follow-up before claiming the prescription half of the M2 exit gate.
+- Medicine reminder wiring (parsed meds → reminder creation) — depends on medication extraction above
 - Per-record AI cost logging
 - Render prod deploy (after DPA review + real key)
-- **M2 demo:** snap lab → trend chart; snap prescription → medicine list (pending live worker)
+- **M2 demo (with a live Gemini key):** snap lab report → typed lab values on the trend chart works end-to-end; snap prescription → medicine list does NOT yet (medication extraction not built — see above)
 
 ### Sprints 11–13 — Use & Reach (E5/E6/E7, M3, Wk 11–13)
 - **Design first:** ShareScopeForm, QRCard, ConsentRow, AccessLogRow, ReminderItem per `UX-Plan.md` §8; public `/s/[token]` doctor-share view is its own clean, no-chrome surface (Design-System §7). Ship against the Definition of Done.
