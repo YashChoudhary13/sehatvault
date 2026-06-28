@@ -1,7 +1,7 @@
 import logging
 from .db import db
 from .callback import post_result
-from .pipeline import preprocess, extract, classify
+from .pipeline import preprocess, extract, classify, normalise
 
 log = logging.getLogger("worker")
 CONFIDENCE_FLOOR = 0.4
@@ -18,13 +18,15 @@ async def process_job(record_id: str) -> None:
     extracted = await extract.run(images)
     extracted.type = classify.to_record_type(extracted.type)
 
+    lab_values = normalise.normalise_values(extracted.raw_values, extracted.doc_date)
+
     status = "needs_review" if extracted.confidence < CONFIDENCE_FLOOR else "done"
     payload = {
         "record_id": record_id,
         "status": status,
         "extracted": extracted.model_dump(),
-        "lab_values": [],      # Task 5
-        "medications": [],     # Task 5
+        "lab_values": [lv.model_dump() for lv in lab_values],
+        "medications": [],     # Task 6
         "embeddings": [],      # Task 6
         "summary": None,       # Task 7
         "summary_hi": None,

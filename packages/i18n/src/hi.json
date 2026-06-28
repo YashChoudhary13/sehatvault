@@ -251,5 +251,12 @@
   "landing.pricing.plus.badge": "अगला",
   "landing.cta.heading": "अपने परिवार के स्वास्थ्य रिकॉर्ड घर लाएं।",
   "landing.cta.description": "कुछ मिनटों में अपना निजी वॉल्ट सेट करें। मुफ़्त शुरुआत, कोई कार्ड नहीं।",
-  "landing.cta.button": "मुफ़्त शुरू करें"
+  "landing.cta.button": "मुफ़्त शुरू करें",
+  "trends.title": "लैब रुझान",
+  "trends.empty": "अभी कोई लैब मान दर्ज नहीं। रुझान देखने के लिए लैब रिपोर्ट अपलोड करें।",
+  "trends.no_member": "सदस्य नहीं मिला।",
+  "trends.ref_range": "सामान्य सीमा",
+  "trends.flag.high": "सीमा से अधिक",
+  "trends.flag.low": "सीमा से कम",
+  "trends.flag.normal": "सामान्य"
 }
