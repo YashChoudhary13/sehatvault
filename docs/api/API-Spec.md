@@ -120,26 +120,54 @@ PATCH /records/:id/review
 ```
 
 ### 5.4 AI worker callback (internal, service-role + HMAC)
+
+**Security:** The handler reads the raw request body as text, computes `sha256=<hex>` over it using `AI_CALLBACK_SECRET`, and does a constant-time comparison against the `X-Signature` header. Any mismatch → `401`. Only the Python worker (which holds the secret) may call this endpoint.
+
 ```
 POST /api/ai/callback
-Headers: X-Signature: hmac-sha256(body, AI_CALLBACK_SIGNING_SECRET)
+Headers:
+  Content-Type: application/json
+  X-Signature: sha256=<hmac-sha256 hex of raw body using AI_CALLBACK_SECRET>
+
+Body:
 {
-  "record_id": "…",
-  "status": "done" | "needs_review" | "failed",
-  "confidence": 0.93,
-  "classification": "lab_report",
-  "record_date": "2026-06-18",
-  "facility": "SRL Diagnostics",
-  "doctor": "Dr. Rao",
-  "summary": "Blood test — HbA1c 7.8% (slightly high).",
-  "observations": [ { "raw_name": "HbA1c", "canonical_name": "HbA1c", "loinc_code": "4548-4",
-                      "value_num": 7.8, "unit": "%", "flag": "high", "confidence": 0.95 } ],
-  "medications": [],
-  "embeddings_written": 4
+  "record_id": "<uuid>",                        // required
+  "status": "done" | "needs_review" | "failed", // required
+  "extracted":  { … } | null,                   // raw pydantic extraction (stored on health_record)
+  "lab_values": [                                // zero or more
+    {
+      "analyte":    "HbA1c",
+      "value":      7.8,
+      "unit":       "%",               // nullable
+      "measured_at": "2026-06-18",     // nullable ISO date
+      "ref_low":    4.0,               // nullable
+      "ref_high":   5.6,               // nullable
+      "flag":       "high"             // nullable string
+    }
+  ],
+  "medications": [                               // zero or more
+    {
+      "name":       "Metformin",
+      "dose":       "500 mg",          // nullable
+      "frequency":  "twice daily",     // nullable
+      "active":     true,              // default true
+      "started_at": "2026-06-18"       // nullable ISO date
+    }
+  ],
+  "embeddings": [                                // zero or more (Should-have — pgvector)
+    { "chunk": "<text>", "vector": [0.1, …] }   // vector must be 768-dim
+  ],
+  "summary":    "Blood test — HbA1c 7.8% (slightly high). Not medical advice.",  // nullable
+  "summary_hi": "रक्त परीक्षण — HbA1c 7.8% (थोड़ा अधिक)। चिकित्सीय सलाह नहीं।" // nullable
 }
-→ 200
+
+→ 200  { "ok": true }
+→ 401  { "error": { "code": "UNAUTHORIZED" } }   // bad or missing X-Signature
+→ 400  { "error": { "code": "BAD_REQUEST" } }    // zod parse failure
+→ 500  { "error": { "code": "INTERNAL_SERVER_ERROR" } }
 ```
-Only the worker (holding the secret + service role) may call this. The handler validates the signature, upserts child rows **idempotently** by `record_id`, and stamps `family_id` from the record.
+
+**Idempotency:** the handler derives `family_id` and `member_id` server-side from the `health_record` row (never from the payload). It then **deletes then re-inserts** all child rows for `record_id` in `lab_value`, `medication`, and `record_embedding` — so re-extraction is safe and the payload is the source of truth. `health_record.ocr_status`, `.extracted`, `.summary`, `.summary_hi` are updated atomically before child writes.
 
 ---
 

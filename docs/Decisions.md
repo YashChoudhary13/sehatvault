@@ -175,6 +175,13 @@
 - **Consequences:** Warm Trust name and teal-primary palette are retired across all docs and tokens. `packages/ui` is now a real, populated workspace — not a placeholder. Landing and in-app are on a shared primitive layer; future surfaces extend from `@sehatvault/ui` rather than duplicating motion/component logic in `apps/web`. Authed in-app live pixel-verify (desktop + 390px mobile) is pending a logged-in session (email-OTP login cannot be automated in-environment) — state this honestly, don't claim live-verified.
 - **Revisit-when:** Hero video assets are ready → wire `HeroMedia` (add elder-mode check at that time); dark mode investment is warranted → flip CSS variable values in `theme.css`.
 
+### ADR-023 — M2 AI worker: OpenAI-compatible SDK; default provider Google Gemini
+- **Status:** Accepted (2026-06-28, Sprint 7)
+- **Context:** The original tech-stack doc listed "Claude" as the extraction LLM (ADR-010). During Sprint 7, the worker needed a usable default that: (a) works with the OpenAI Python SDK's standard interface so any provider can be swapped in one file; (b) supports vision (for document OCR) and embedding (768-dim for pgvector); (c) has a functional free/demo tier so the key can remain blank and the worker still starts. Google Gemini satisfies all three — `gemini-2.5-flash` handles vision + summarisation; `text-embedding-004` produces 768-dim embeddings; both are reachable via Gemini's OpenAI-compatible REST endpoint (`https://generativelanguage.googleapis.com/v1beta/openai/`). Claude (Anthropic) and other OpenAI-compatible endpoints remain valid drop-in providers.
+- **Decision:** The M2 AI worker (`services/ai/`) uses the **`openai` Python SDK** pointed at `OPENAI_BASE_URL` + `OPENAI_API_KEY`. The **default provider is Google Gemini** (`gemini-2.5-flash` for vision/summary; `text-embedding-004` 768-dim for embeddings). The API key is left **blank** in `.env.example` (operator pastes their key). All provider-specific state is isolated in **`services/ai/app/llm.py`** — one file to change if swapping providers. ADR-010 ("Claude for vision extraction") is **superseded for the M2 extraction/summary worker** by this decision; Claude remains the planned provider for RAG Q&A (Should-have, not yet built).
+- **Consequences:** The worker starts and is code-testable with a blank key (mocked/synthetic); no key is baked in. A FreeLLMAPI-compatible endpoint is the documented fallback for development. Provider lock-in is minimal — any OpenAI-compatible endpoint works. Trade-off: Gemini vision accuracy vs Claude on complex multilingual Indian medical forms is untested at scale; the eval harness (`services/ai/eval/`) provides the measurement gate (≥90% field accuracy) before production use.
+- **Revisit-when:** Eval harness shows accuracy gap on Indian-language forms; cost or residency pressure dictates a switch; or production DPA review concludes a specific provider is required.
+
 ---
 
 ## Decision dependency map
@@ -183,7 +190,7 @@ ADR-005 Supabase ──┬─► ADR-002 (Next+Supabase BFF) ──► ADR-001 (
                    ├─► ADR-004 (pgmq/pg_cron)  ──► ADR-008 (async pipeline)
                    ├─► ADR-019 (email OTP; supersedes ADR-007 phone OTP)
                    └─► ADR-011 (pgvector)
-ADR-003 Python AI ─► ADR-008 ─► ADR-010 (Claude) ─► ADR-012 (PHI residency tradeoff)
+ADR-003 Python AI ─► ADR-008 ─► ADR-010 (Claude) ─► ADR-023 (OpenAI-SDK→Gemini default for M2 worker; supersedes ADR-010 for extraction) ─► ADR-012 (PHI residency tradeoff)
 ADR-006 FHIR-aware ─► ADR-013 (defer ABDM)
-ADR-020 NotificationProvider (Mock + Telegram; supersedes ADR-014 WhatsApp)   ADR-015 i18n   ADR-017 Razorpay (test mode)   ADR-016 monorepo   ADR-018 hosting   ADR-021 sequential migrations
+ADR-020 NotificationProvider (Mock + Telegram; supersedes ADR-014 WhatsApp)   ADR-015 i18n   ADR-017 Razorpay (test mode)   ADR-016 monorepo   ADR-018 hosting   ADR-021 sequential migrations   ADR-022 Calm Indigo design system
 ```

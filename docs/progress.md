@@ -3,10 +3,10 @@
 > **Related docs:** [Planning](planning/Planning.md) · [Decisions](Decisions.md) · [Engineering-Plan](architecture/Engineering-Plan.md) · [DOCUMENTATION](DOCUMENTATION.md)
 
 > **Last updated:** 2026-06-28
-> **Current milestone:** M1 — Manual Vault (**COMPLETE & pixel-verified**) + **Calm Indigo design overhaul COMPLETE** — both merged to `main`. Hero loop video wired (PR #4). **Next: Sprint 7 — AI Pipeline (M2).**
-> **Active branches:** none — `main` is current (`4c1a958`).
+> **Current milestone:** M2 — AI Pipeline (**Sprint 7 COMPLETE**, code committed on `feat/m2-ai-pipeline`). M1 + Calm Indigo design overhaul already merged to `main`.
+> **Active branches:** `feat/m2-ai-pipeline` (Sprint 7 code; pending merge to `main`).
 >
-> **▶ RESUME HERE (next session):** **M1 + Calm Indigo design overhaul + hero video are all MERGED into `main`.** Hero video wired via PR #4 (`4c1a958`): live-action loop (woman scanning a lab report) cropped to drop the Veo watermark, served through `<HeroMedia>` from `apps/web/public/hero/` (mp4 + webm + poster), `landing.hero.media_alt` added (en + hi); old CSS `PhoneMockup` removed. Design overhaul via PR #3 (`283a2d6`); M1 via PR #2 (`b24f56a`). **Supabase prod is fully in sync** — `supabase migration list` confirms `0001`–`0005` applied remotely (incl. `0003` function-grant hardening; the earlier "pending push" note was stale). **`main` CI green** (build ✓ · db ✓). **Hero-video follow-ups (non-blocking):** placeholder live-action, not the abstract brand loop; no 9:16 cut yet (mobile reuses the 3:2 card). **⭐ NEXT TASK = Sprint 7 — AI Pipeline (M2):** `services/ai/` FastAPI worker draining pgmq + Render deploy; `/api/ai/callback` (HMAC-verified); realtime record status. #1 delivery risk (Dev Rule 5) — START WITH `superpowers:brainstorming` to lock open decisions (extraction LLM/model, callback HMAC design, worker deploy, T1 eval-set sourcing ~50 de-identified docs) → spec → `writing-plans` → build. Read order: `../CLAUDE.md` → this file → `planning/Planning.md` (Sprint 7, row 7) → `architecture/Engineering-Plan.md` → `api/API-Spec.md` (callback) → `database/Schema.md`.
+> **▶ RESUME HERE (next session):** **Sprint 7 (M2 AI pipeline) is built and committed on `feat/m2-ai-pipeline`.** Steps to carry forward: (1) Wire a real Gemini API key into `services/ai/.env` (`OPENAI_API_KEY=<key>`), run the worker against a dev record, and confirm the callback posts correctly → pixel-verify the `ProcessingCard` + trend chart in a live browser. (2) Apply migration `0006_ai_pipeline.sql` to prod Supabase. (3) Merge `feat/m2-ai-pipeline` → `main` (tag `v0.2`). (4) Then start **M3 Sprints 11–13** (doctor share, reminders, NotificationProvider, consent dashboard). Read order: `../CLAUDE.md` → this file → `planning/Planning.md` (Sprints 11–13) → `api/API-Spec.md` (share endpoints) → `database/Schema.md`.
 
 ---
 
@@ -192,6 +192,37 @@ Every sprint below now carries an explicit **Design** step + this DoD.
 
 ---
 
+---
+
+### Sprint 7 — AI Pipeline (completed 2026-06-28, branch `feat/m2-ai-pipeline`)
+
+> 10 commits (Tasks 1–10). Code-complete; pending live pixel-verification (needs a real Gemini key + dev server running) and prod migration of `0006_ai_pipeline.sql`.
+
+| Task | Status | Notes |
+|------|--------|-------|
+| Migration `0006_ai_pipeline.sql` — pgvector guard, `pgmq_send` RPC, `lab_value` + `record_embedding` + `medication` tables + RLS (4 policies each) + `health_record` Realtime publication | ✅ built | Applied locally; **pending prod push** |
+| RLS isolation tests extended for `lab_value`, `record_embedding`, `medication` | ✅ CI-verified | No psql locally; CI `db` job is the gate |
+| Python FastAPI worker (`services/ai/`) — asyncio pgmq drain loop; stateless | ✅ | `main.py` + `worker.py` + `db.py` |
+| Provider isolation (`app/llm.py`) — OpenAI-compatible SDK → Google Gemini default (`gemini-2.5-flash` / `text-embedding-004`); key left blank; ADR-023 | ✅ | One-file swap for any OpenAI-compatible endpoint |
+| **Preprocess stage** — Supabase Storage fetch (service-role) + PDF→images via pypdfium2 | ✅ | `pipeline/preprocess.py` |
+| **Extract stage** — vision LLM → strict Pydantic JSON; low-confidence → `needs_review` | ✅ | `pipeline/extract.py`; `schemas.py` |
+| **Classify stage** — free-text type → `record_type` enum | ✅ | `pipeline/classify.py` |
+| **Normalise stage** — raw values → canonical `lab_value` analytes/units/flags; mirrors `packages/core/src/lab.ts` | ✅ | `pipeline/normalise.py` |
+| **Embed stage** — `record_embedding` pgvector 768-dim (Should-have) | ✅ | `pipeline/embed.py` |
+| **Summarise stage** — en + hi one-line summary + mandatory "not medical advice" disclaimer | ✅ | `pipeline/summarise.py` |
+| `POST /api/ai/callback` route — HMAC-verified (`X-Signature: sha256=<hex>`, `AI_CALLBACK_SECRET`), zod-validated, service-role writes, idempotent on `record_id` | ✅ | `apps/web/src/app/api/ai/callback/route.ts` |
+| Realtime UI — `useRecordRealtime` hook (Supabase Realtime + 4s poll fallback) + `ProcessingCard` (pending/processing/failed) + needs_review banner + re-extract; Calm Indigo tokens, en+hi | ✅ built | **Pixel-verification deferred** (needs live worker + Gemini key) |
+| Member trend chart — `/members/[id]/trends`; dependency-free accessible SVG per analyte; ref-range band; icon+label status; sr-only table fallback | ✅ built | **Pixel-verification deferred** (same reason) |
+| Eval harness — `services/ai/eval/` (`run_eval.py`, `score.py`, `golden.jsonl`, `README.md`); ≥90% field-accuracy target; run manually once a key is set | ✅ | 10 synthetic de-identified golden records |
+| Python test suite — 24 tests passing (classify/callback/extract/normalise/summarise/eval-scoring) | ✅ | `pytest services/ai/tests/` |
+| `packages/core` lab domain + tests — `lab.ts` + analyte canon/unit normalise; 54 core tests passing | ✅ | |
+| Web typecheck + build clean | ✅ | `pnpm --filter web build` green |
+| Render deploy (prod container) | ❌ deferred | Needs a prod key + DPA review before real PHI; run locally for now |
+| Live pixel-verify (ProcessingCard + trends) | ❌ deferred | Requires real Gemini key + running dev server |
+| Migration `0006` applied to prod | ❌ pending | Operator task; apply before merging to `main` |
+
+---
+
 ## In-Progress Tasks
 
 > Each sprint now opens with a **Design** step (read `UX-Plan.md` + `Design-System.md` for the screens involved) and closes against the **Definition of Done** at the top of this file.
@@ -219,20 +250,13 @@ Every sprint below now carries an explicit **Design** step + this DoD.
 | **M1 demo gate:** upload 3-page PDF → stored, listed, opens via signed URL | ⏳ | lead | run after seed applied |
 
 ### Sprints 7–10 — AI Pipeline (E4, M2, Wk 7–10)
-- **Design first:** TrendChart, ReviewCard (low-confidence correction UI), ProcessingCard, MedItem per `UX-Plan.md` §8 + Design-System motion (optimistic capture, processing states). Every new screen ships against the Definition of Done.
-- `services/ai/` FastAPI + Dockerfile + Render deploy
-- pgmq enqueue on ingest + worker drain loop (idempotent)
-- `/api/ai/callback` HMAC-signed route handler
-- Vision-LLM extraction → strict pydantic JSON schema
-- Record-type classification
-- **Golden eval harness** (50 de-identified docs) — T1 gate
-- `lab_catalog` seed + normalisation (canonical/LOINC/units)
-- Medicine parsing from prescriptions
-- TrendChart + trends API
-- ReviewCard (low-confidence correction UI)
-- Chunk → embed → pgvector + 1-line summaries (en/hi)
-- Per-record cost logging
-- **M2 demo:** snap lab → trend chart; snap prescription → medicine list
+> **Sprint 7 COMPLETE** — see the completed-tasks table above. Remaining Sprints 8–10 items still to build:
+- ReviewCard (low-confidence correction UI) — full human-in-the-loop correction flow
+- `lab_catalog` seed + broader LOINC normalisation
+- Medicine reminder wiring (parsed meds → reminder creation)
+- Per-record AI cost logging
+- Render prod deploy (after DPA review + real key)
+- **M2 demo:** snap lab → trend chart; snap prescription → medicine list (pending live worker)
 
 ### Sprints 11–13 — Use & Reach (E5/E6/E7, M3, Wk 11–13)
 - **Design first:** ShareScopeForm, QRCard, ConsentRow, AccessLogRow, ReminderItem per `UX-Plan.md` §8; public `/s/[token]` doctor-share view is its own clean, no-chrome surface (Design-System §7). Ship against the Definition of Done.
