@@ -20,13 +20,14 @@ const MedicationSchema = z.object({
   active: z.boolean().default(true),
   started_at: z.string().nullable().optional(),
 });
+const EmbeddingSchema = z.object({ chunk: z.string(), vector: z.array(z.number()) });
 const PayloadSchema = z.object({
   record_id: z.string().uuid(),
   status: z.enum(["done", "needs_review", "failed"]),
   extracted: z.record(z.unknown()).nullable().optional(),
   lab_values: z.array(LabValueSchema).default([]),
   medications: z.array(MedicationSchema).default([]),
-  embeddings: z.array(z.unknown()).default([]),
+  embeddings: z.array(EmbeddingSchema).default([]),
   summary: z.string().nullable().optional(),
   summary_hi: z.string().nullable().optional(),
 });
@@ -95,6 +96,18 @@ export async function POST(req: NextRequest) {
           record_id: parsed.record_id,
           family_id: rec.family_id,
           member_id: rec.member_id,
+        })),
+      );
+    }
+    await svc.from("record_embedding").delete().eq("record_id", parsed.record_id);
+    if (parsed.embeddings.length) {
+      await svc.from("record_embedding").insert(
+        parsed.embeddings.map((e) => ({
+          record_id: parsed.record_id,
+          family_id: rec.family_id,
+          member_id: rec.member_id,
+          chunk: e.chunk,
+          embedding: `[${e.vector.join(",")}]`,
         })),
       );
     }
