@@ -17,3 +17,9 @@ supabase/database.types.ts
 
 # Raw Veo/source video downloads (web assets live in apps/web/public/hero)
 assets/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+services/ai/.venv/
