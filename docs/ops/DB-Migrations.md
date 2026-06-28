@@ -14,20 +14,29 @@
 | Postgres | 17 |
 | Pooler | `aws-1-ap-south-1.pooler.supabase.com:5432` |
 
-## Current remote state (2026-06-23)
+## Current remote state (2026-06-28)
 
-`supabase_migrations.schema_migrations` on remote:
+`supabase_migrations.schema_migrations` on remote — `supabase migration list` shows
+**local == remote for `0001`–`0006`** (all applied):
 
 | version | name | status |
 |---------|------|--------|
 | 0001 | init | ✅ applied |
 | 0002 | family | ✅ applied (tables `app_user`/`family`/`member_profile`, RLS + 11 policies, `auth_family_ids()`, signup trigger) |
-| 0003 | harden_function_grants | ⬜ **pending — apply via `supabase db push`** |
+| 0003 | harden_function_grants | ✅ applied |
+| 0004 | health_records | ✅ applied (`health_record` + enums, pgmq guard, `documents` bucket + storage RLS) |
+| 0005 | fix_trigger_policy_names | ✅ applied |
+| 0006 | ai_pipeline | ✅ applied 2026-06-28 via `supabase db push` (pgvector + `pgmq_send` RPC + `lab_value`/`record_embedding`/`medication` + RLS 4-policies-each + `check_phi_family` trigger + `health_record` Realtime publication) |
 
-`0001`/`0002` are fully applied and the history is clean sequential (the earlier
-timestamp-migration drift was repaired — `migration repair` is **no longer needed**).
-`0003` (revokes the unused RPC `EXECUTE` on the two `SECURITY DEFINER` helpers) is committed
-in the repo but **not yet applied to prod**; it resolves Supabase security advisors 0028/0029.
+History is clean sequential (the earlier timestamp-migration drift was repaired —
+`migration repair` is **no longer needed**). `0006` was applied with `supabase db push`
+(dry-run previewed, then pushed); the cached CLI session connected without a fresh token.
+
+**Post-0006 advisor note:** the new PHI tables all have RLS enabled (4 policies each via
+`auth_family_ids()`), and `pgmq_send` is `SECURITY DEFINER` but `EXECUTE` is revoked from
+`public`/`anon` and granted only to `authenticated`/`service_role`. Re-check Dashboard →
+Advisors → Security after deploy; the only expected residual is the pre-existing accepted
+WARN for `auth_family_ids` / `authenticated` (see "After every push" below).
 
 ## Normal flow — apply pending migrations
 
