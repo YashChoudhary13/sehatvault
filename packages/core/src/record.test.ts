@@ -453,7 +453,7 @@ describe("record API contracts", () => {
     ]);
     expect(rpc).toHaveBeenCalledWith("pgmq_send", {
       p_queue_name: "ai_jobs",
-      p_message: JSON.stringify({ record_id: recordId }),
+      p_message: { record_id: recordId },
     });
   });
 
