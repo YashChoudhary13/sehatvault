@@ -214,7 +214,7 @@ Full ADR list: see `docs/Decisions.md` (canonical, ADR-001..022). Key decisions:
 
 ## Current Implementation Status
 
-**As of 2026-06-27 — M0 complete; M1 (Manual Vault) COMPLETE & pixel-verified (branch `feat/m1-manual-vault`, ready for PR → `main`); Calm Indigo design overhaul COMPLETE (branch `feat/design-overhaul`). Next: merge M1 → `main`, merge design overhaul, then Sprint 7 — AI Pipeline (M2).**
+**As of 2026-06-28 — M0 + M1 (Manual Vault) COMPLETE & pixel-verified; Calm Indigo design overhaul COMPLETE; hero loop video wired — all merged to `main` (latest `4c1a958`, PR #4). Supabase prod in sync (`0001`–`0005` applied). `main` CI green. Next: Sprint 7 — AI Pipeline (M2).**
 
 > **Routing note (2026-06-26):** `/` is now the **public marketing landing** (`app/(marketing)/`). The authenticated dashboard moved to **`/home`** (`app/(app)/home/page.tsx`); the old `(app)/page.tsx` was deleted (two route groups cannot both own `/`). Middleware makes `/` public, returns **401 JSON for unauthenticated `/api/**`** (page routes still redirect to `/login`), and sends post-login to `/home`.
 
@@ -293,7 +293,7 @@ Full ADR list: see `docs/Decisions.md` (canonical, ADR-001..022). Key decisions:
 | Item | Priority | Notes |
 |------|----------|-------|
 | ~~Supabase migration history repair~~ | ✅ **Resolved** (2026-06-23) | Remote realigned to sequential `0001`/`0002`; `0002_family.sql` applied to prod. Runbook: `docs/ops/DB-Migrations.md`. |
-| Apply `0003_harden_function_grants.sql` to prod | Low | Function-grant hardening (advisors 0028/0029); committed + CI-gated; run `supabase db push` (operator). |
+| ~~Apply `0003_harden_function_grants.sql` to prod~~ | ✅ Done | Applied to prod; confirmed via `supabase migration list` (remote `0001`–`0005`), 2026-06-28. |
 
 > **No remaining technical blockers on the MVP critical path.** Migration repair is resolved; remote schema is aligned to committed `0001`/`0002`. No external-approval blockers — Email OTP (ADR-019) removes DLT/SMS; Mock + Telegram (ADR-020) remove WhatsApp; billing is Razorpay test-mode.
 >

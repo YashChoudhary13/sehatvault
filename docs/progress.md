@@ -2,11 +2,11 @@
 
 > **Related docs:** [Planning](planning/Planning.md) · [Decisions](Decisions.md) · [Engineering-Plan](architecture/Engineering-Plan.md) · [DOCUMENTATION](DOCUMENTATION.md)
 
-> **Last updated:** 2026-06-27
-> **Current milestone:** M1 — Manual Vault (**COMPLETE & pixel-verified** 2026-06-26) + **Calm Indigo design overhaul COMPLETE** (branch `feat/design-overhaul`, 2026-06-27)
-> **Active branches:** `feat/m1-manual-vault` (7 slices; ready for PR → `main`) · `feat/design-overhaul` (design overhaul; built on top of M1)
+> **Last updated:** 2026-06-28
+> **Current milestone:** M1 — Manual Vault (**COMPLETE & pixel-verified**) + **Calm Indigo design overhaul COMPLETE** — both merged to `main`. Hero loop video wired (PR #4). **Next: Sprint 7 — AI Pipeline (M2).**
+> **Active branches:** none — `main` is current (`4c1a958`).
 >
-> **▶ RESUME HERE (next session):** **M1 + Calm Indigo design overhaul are MERGED into `main` (2026-06-27).** Design overhaul squash-merged via PR #3 (`283a2d6`); M1 was already merged via PR #2 (`b24f56a`). **`main` CI is now fully green** (build ✓ · db ✓) — it had been red for 3+ runs on pre-existing infra bugs, all fixed during the merge: (a) `pnpm-lock.yaml` synced with `packages/ui` deps; (b) 20 lint errors (`sw.js` `/* global */` decl, dead test code in `record.test.ts`, stray Next img-disable in `hero-media.tsx`); (c) migration `0005` trigger rename made idempotent (existence-guarded; no-op on prod, replays clean in CI); (d) CI web-build step given placeholder `NEXT_PUBLIC_SUPABASE_*` so `/login` prerender works. **Still DEFERRED (user-owned):** hero loop video (Task 9) — wire `<HeroMedia>` into the marketing hero when the Veo loop lands (component exists; apply recorded elder-mode fix). Merged local branches `feat/design-overhaul` + `feat/m1-manual-vault` (and remote `feat/design-overhaul`) can be deleted. **⭐ NEXT TASK = Sprint 7 — AI Pipeline (M2):** `services/ai/` FastAPI worker draining pgmq + Render deploy; `/api/ai/callback` (HMAC-verified); realtime record status. #1 delivery risk (Dev Rule 5) — START WITH `superpowers:brainstorming` to lock open decisions (extraction LLM/model, callback HMAC design, worker deploy, T1 eval-set sourcing ~50 de-identified docs) → spec → `writing-plans` → build. Read order: `../CLAUDE.md` → this file → `planning/Planning.md` (Sprint 7, row 7) → `architecture/Engineering-Plan.md` → `api/API-Spec.md` (callback) → `database/Schema.md`.
+> **▶ RESUME HERE (next session):** **M1 + Calm Indigo design overhaul + hero video are all MERGED into `main`.** Hero video wired via PR #4 (`4c1a958`): live-action loop (woman scanning a lab report) cropped to drop the Veo watermark, served through `<HeroMedia>` from `apps/web/public/hero/` (mp4 + webm + poster), `landing.hero.media_alt` added (en + hi); old CSS `PhoneMockup` removed. Design overhaul via PR #3 (`283a2d6`); M1 via PR #2 (`b24f56a`). **Supabase prod is fully in sync** — `supabase migration list` confirms `0001`–`0005` applied remotely (incl. `0003` function-grant hardening; the earlier "pending push" note was stale). **`main` CI green** (build ✓ · db ✓). **Hero-video follow-ups (non-blocking):** placeholder live-action, not the abstract brand loop; no 9:16 cut yet (mobile reuses the 3:2 card). **⭐ NEXT TASK = Sprint 7 — AI Pipeline (M2):** `services/ai/` FastAPI worker draining pgmq + Render deploy; `/api/ai/callback` (HMAC-verified); realtime record status. #1 delivery risk (Dev Rule 5) — START WITH `superpowers:brainstorming` to lock open decisions (extraction LLM/model, callback HMAC design, worker deploy, T1 eval-set sourcing ~50 de-identified docs) → spec → `writing-plans` → build. Read order: `../CLAUDE.md` → this file → `planning/Planning.md` (Sprint 7, row 7) → `architecture/Engineering-Plan.md` → `api/API-Spec.md` (callback) → `database/Schema.md`.
 
 ---
 
@@ -73,7 +73,7 @@ Every sprint below now carries an explicit **Design** step + this DoD.
 | App-lock PIN (argon2; server-verify) | ✅ | E1.S1.2.T8 | `@node-rs/argon2`; rate-limited verify; hash never to browser; PIN setup + lock screen in `(app)` shell |
 | PIN domain logic + Vitest (`packages/core/src/pin.ts`) | ✅ | E1.S1.2.T8 | Length 4–6, digits-only, trivial-PIN blocklist |
 | i18n locale switching (wire from `app_user.locale`) | ✅ | E1.S1.2.T8 | `LocaleProvider` + `useT()` hook; `updateUserLocale` Server Action; `LocaleSwitcher` in Settings |
-| `0003_harden_function_grants.sql` | ✅ committed + CI-gated | — | Pending `supabase db push` to prod (low priority, no blocker) |
+| `0003_harden_function_grants.sql` | ✅ applied to prod | — | Confirmed via `supabase migration list` (remote shows `0003`) |
 | ~~Admin: DLT / WhatsApp / Razorpay KYC~~ → deferred | ➖ | E1.S1.2.T9 | Not MVP blockers (ADR-019/020) |
 
 **M0 exit gate — all items verified:**
@@ -185,7 +185,7 @@ Every sprint below now carries an explicit **Design** step + this DoD.
 | Shared `EmptyState` adopted from `@sehatvault/ui` | ✅ | |
 | **Richer `/home` dashboard** | ✅ | Greeting + `summarizeDashboard` stats row (members/records/recent-7-days, via `packages/core`) + recent-records strip (`RecordCard`) + `UploadSection`; existing data/endpoints only — no new tables or RLS |
 | Hardcoded colour sweep (Task 13) | ✅ | 0 stragglers; only required PWA literal hexes remain (already Calm Indigo) |
-| **Task 9 — Hero video/poster** | ❌ DEFERRED (user-owned) | User will generate the loop in Veo and wire `HeroMedia` later; CSS device mockup retained as the hero focal point — no dangling video refs. Apply recorded elder-mode fix at wire-time. |
+| **Task 9 — Hero video/poster** | ✅ DONE (PR #4, `4c1a958`) | Live-action Veo loop (cropped to drop watermark) wired via `<HeroMedia>` (mp4 + webm + poster in `apps/web/public/hero/`); `landing.hero.media_alt` (en + hi); CSS `PhoneMockup` removed. Follow-ups: placeholder live-action (abstract brand loop still preferred long-term); no 9:16 cut yet. |
 | Authed in-app live pixel-verify (desktop + 390px) | ✅ | 2026-06-27 via agent-browser + "Continue as Demo" (dev login): `/home`, `/records` desktop; landing + mobile (390px) confirmed. Calm Indigo, elevated cards, month-grouped timeline, icon+label status, no horizontal scroll. Full suite green: typecheck (5 pkgs) + tests (59) + web build (14 routes). |
 
 **Brand rename:** "Warm Trust" → "Calm Indigo" (palette name). `packages/ui` (`@sehatvault/ui`) is now a populated workspace — not a placeholder.
@@ -273,7 +273,7 @@ Every sprint below now carries an explicit **Design** step + this DoD.
 | Blocker | Impact | Status |
 |---------|--------|--------|
 | ~~Supabase migration history repair~~ | Remote history realigned to sequential `0001`/`0002`; `0002_family.sql` applied to prod. | ✅ **Resolved** (2026-06-23) — runbook: `ops/DB-Migrations.md` |
-| Apply `0003_harden_function_grants.sql` to prod | Function-grant hardening (advisors 0028/0029); committed + CI-gated, not yet pushed. | ⬜ Run `supabase db push` (operator, per runbook) |
+| Apply `0003_harden_function_grants.sql` to prod | Function-grant hardening (advisors 0028/0029). | ✅ Applied — confirmed `0003` on remote via `supabase migration list` (2026-06-28) |
 
 ### Not blockers (setup / risk)
 | Item | Note |
@@ -297,6 +297,6 @@ Every sprint below now carries an explicit **Design** step + this DoD.
 2. **Carry-overs from the landing work:** (a) pixel-verify `/records/[id]/edit` end-to-end with agent-browser; (b) **seed demo data** (one family + a few members + sample records) so screens demo well and aren't empty; (c) wire the marketing landing copy into `t()` (en + hi) + add a language toggle.
 3. **Add `packages/db`** (generated Supabase TS types via `supabase gen types typescript`) — unlocks type-safe queries; do after any schema-stable sprint.
 4. **Browser/E2E verification is unblocked** — `agent-browser` (v0.31) is installed. Use it as the standard pixel-check tool (`open` → `screenshot --full` → `set viewport <w> <h>` for mobile → click critical actions). Chrome-devtools MCP is still unavailable; don't rely on it.
-5. **Apply `0003_harden_function_grants.sql` to prod** (`supabase db push`) — low priority, no blocker.
+5. ~~Apply `0003_harden_function_grants.sql` to prod~~ — ✅ done; remote shows `0001`–`0005`.
 6. **Do not start `services/ai/`** until Sprint 7 — premature AI work is the #1 delivery risk.
 7. **PHI-to-LLM DPA / zero-retention is a *production* requirement — deferred.** MVP dev/test uses synthetic data.
