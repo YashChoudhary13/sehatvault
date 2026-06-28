@@ -16,6 +16,6 @@ async def run(chunks: list[str]) -> list[Embedding]:
         return []
     try:
         vectors = await llm.embed(chunks)
+        return [Embedding(chunk=c, vector=v) for c, v in zip(chunks, vectors) if len(v) == EMBED_DIM]
     except Exception:
-        return []  # embeddings are Should; never fail the record over them
-    return [Embedding(chunk=c, vector=v) for c, v in zip(chunks, vectors) if len(v) == EMBED_DIM]
+        return []  # embeddings are Should; never fail the record over them (malformed result included)
