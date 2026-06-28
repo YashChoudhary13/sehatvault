@@ -147,22 +147,14 @@ export async function POST(req: NextRequest) {
 
   const recordId = insertedRecord.id;
 
-  // Enqueue a job for the AI worker via pgmq.
-  try {
-    // Attempt to use the pgmq.send function via RPC.
-    const { error: rpcError } = await supabase.rpc("pgmq_send", {
-      p_queue_name: "ai_jobs",
-      p_message: JSON.stringify({ record_id: recordId }),
-    });
-
-    if (rpcError) {
-      console.warn("[ingest] RPC enqueue failed, falling back to status-only");
-      // Fallback: we already set status to 'pending'. In a real system, we might want to
-      // ensure the worker polls the table. For now, we log and continue.
-    }
-  } catch {
-    console.error("[ingest] enqueue error");
-    // Continue — the record is saved with status 'pending'.
+  // Enqueue a job for the AI worker via pgmq (wrapper RPC defined in 0006).
+  const { error: rpcError } = await supabase.rpc("pgmq_send", {
+    p_queue_name: "ai_jobs",
+    p_message: { record_id: recordId },
+  });
+  if (rpcError) {
+    // Record is saved as 'pending'; surface enqueue failure for observability but don't fail the upload.
+    console.error("[ingest] enqueue failed", rpcError.code);
   }
 
   return NextResponse.json({ id: recordId }, { status: 202 });
