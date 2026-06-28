@@ -14,3 +14,6 @@ next-env.d.ts
 supabase/.branches/
 supabase/.temp/
 supabase/database.types.ts
+
+# Raw Veo/source video downloads (web assets live in apps/web/public/hero)
+assets/
