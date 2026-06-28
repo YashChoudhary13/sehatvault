@@ -30,8 +30,8 @@ function lerp(v: number, inMin: number, inMax: number, outMin: number, outMax: n
 }
 
 function FlagIcon({ flag }: { flag: string | null }) {
-  if (flag === "high") return <TrendingUp className="h-4 w-4 text-[var(--color-warning,#d97706)]" aria-hidden="true" />;
-  if (flag === "low") return <TrendingDown className="h-4 w-4 text-[var(--color-warning,#d97706)]" aria-hidden="true" />;
+  if (flag === "high") return <TrendingUp className="h-4 w-4 text-[var(--color-warn)]" aria-hidden="true" />;
+  if (flag === "low") return <TrendingDown className="h-4 w-4 text-[var(--color-warn)]" aria-hidden="true" />;
   return <Minus className="h-4 w-4 text-[var(--color-primary)]" aria-hidden="true" />;
 }
 
@@ -152,7 +152,7 @@ function SingleChart({
               fill="var(--color-surface)"
               stroke={
                 p.flag === "high" || p.flag === "low"
-                  ? "var(--color-warning,#d97706)"
+                  ? "var(--color-warn)"
                   : "var(--color-primary)"
               }
               strokeWidth={2}
