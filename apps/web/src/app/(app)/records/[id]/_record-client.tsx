@@ -184,14 +184,23 @@ export function RecordDetailClient({
   return (
     <div className="space-y-6">
       {ocr_status === "needs_review" && (
-        <div className="flex items-center gap-3 rounded-xl border border-[var(--color-warn)]/30 bg-[var(--color-warn)]/10 p-4">
-          <AlertTriangle
-            className="h-5 w-5 shrink-0 text-[var(--color-warn)]"
-            aria-hidden="true"
-          />
-          <p className="text-sm font-medium text-[var(--color-warn)]">
-            {t(locale, "records.processing.needs_review")}
-          </p>
+        <div className="space-y-3">
+          <div className="flex items-center gap-3 rounded-xl border border-[var(--color-warn)]/30 bg-[var(--color-warn)]/10 p-4">
+            <AlertTriangle
+              className="h-5 w-5 shrink-0 text-[var(--color-warn)]"
+              aria-hidden="true"
+            />
+            <p className="text-sm font-medium text-[var(--color-warn)]">
+              {t(locale, "records.processing.needs_review")}
+            </p>
+          </div>
+          <div className="flex justify-end">
+            <ReExtractButton
+              recordId={row.id}
+              ocrStatus={row.ocr_status}
+              locale={locale}
+            />
+          </div>
         </div>
       )}
 

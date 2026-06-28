@@ -1,10 +1,10 @@
 "use client";
 
-import { Loader2, AlertTriangle, XCircle, Clock } from "lucide-react";
+import { Loader2, XCircle, Clock } from "lucide-react";
 import { Card } from "@sehatvault/ui";
 import { t, type Locale } from "@sehatvault/i18n";
 
-type OcrStatus = "pending" | "processing" | "needs_review" | "failed";
+type OcrStatus = "pending" | "processing" | "failed";
 
 interface ProcessingCardProps {
   status: OcrStatus;
@@ -35,20 +35,6 @@ export function ProcessingCard({ status, locale }: ProcessingCardProps) {
         />
         <p className="text-sm font-medium text-[var(--color-ink)]">
           {t(locale, "records.processing.processing")}
-        </p>
-      </Card>
-    );
-  }
-
-  if (status === "needs_review") {
-    return (
-      <Card className="flex items-center gap-3 border-[var(--color-warn)]/30 bg-[var(--color-warn)]/10 p-4">
-        <AlertTriangle
-          className="h-5 w-5 shrink-0 text-[var(--color-warn)]"
-          aria-hidden="true"
-        />
-        <p className="text-sm font-medium text-[var(--color-warn)]">
-          {t(locale, "records.processing.needs_review")}
         </p>
       </Card>
     );

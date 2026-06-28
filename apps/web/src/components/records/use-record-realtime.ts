@@ -7,7 +7,7 @@ export type RecordRow = {
   id: string;
   title: string | null;
   type: string;
-  ocr_status: string;
+  ocr_status: "pending" | "processing" | "done" | "needs_review" | "failed" | "manual";
   record_date: string | null;
   file_object_key: string | null;
   created_at: string;
